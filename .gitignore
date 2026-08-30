@@ -1,0 +1,20 @@
+## Visual Studio & .NET Build Artifacts
+bin/
+obj/
+publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+.vscode/
+
+## Inno Setup & Packaging Outputs
+installer/output/
+installer/Output/
+*.iss.bak
+
+## Crash logs and local test data
+*.log
+scratch/

@@ -1,0 +1,35 @@
+﻿{
+  "schemaVersion": 1,
+  "services": {
+    "Claude": {
+      "usageUrl": "https://claude.ai/settings/usage",
+      "waitForSelector": "[role='meter'][aria-valuenow]",
+      "usageTextSelector": "[role='meter'][aria-valuenow]",
+      "percentRegex": "(\\d{1,3})",
+      "maxWaitAttempts": 5,
+      "waitIntervalMs": 1000,
+      "notes": "Confirmed against claude.ai's Settings > Usage page (2026-08). The first '[role=meter][aria-valuenow]' element is the 'Current session' limit (resets every few hours); a second meter further down covers weekly 'All models' usage. ClaudeUsageProvider reads the aria-valuenow attribute directly (a clean 0-100 number) rather than parsing visible text, so this is more robust than a text-based selector - but the settings modal is client-rendered React with auto-generated element IDs, so if claude.ai restructures the meter markup itself (drops role=meter or aria-valuenow), this will need updating the same way: open Settings > Usage, inspect the progress bar with DevTools, and adjust usageTextSelector here."
+    },
+    "ChatGPT": {
+      "usageUrl": "https://chatgpt.com/settings/usage",
+      "waitForSelector": "",
+      "usageTextSelector": "",
+      "percentRegex": "(\\d{1,3})\\s*%",
+      "maxWaitAttempts": 5,
+      "waitIntervalMs": 1000,
+      "notes": "STUB - not implemented in Phase 1. Fill in selectors when ChatGPT support is added."
+    },
+    "Antigravity": {
+      "usageUrl": "",
+      "waitForSelector": "",
+      "usageTextSelector": "span.text-sm.font-semibold.text-foreground.text-right",
+      "percentRegex": "(\\d{1,3})%",
+      "maxWaitAttempts": 1,
+      "waitIntervalMs": 1000,
+      "remoteDebuggingPort": 9222,
+      "targetUrlContains": "",
+      "invertPercent": true,
+      "notes": "Confirmed against a live Antigravity session (2026-08). Antigravity (Google's desktop agentic IDE - separate usage quota from the Gemini web app, not the same thing) isn't a web page, so it doesn't use usageUrl/WebView2 - AntigravityUsageProvider reads it via the Chrome DevTools Protocol instead (Antigravity is Electron/VS Code-fork based). Setup: launch Antigravity with --remote-debugging-port=9222 (must match remoteDebuggingPort here). Under Settings > Models > Model Quota, each model group shows a 'Weekly Limit Remaining' and 'Five Hour Limit Remaining' as a `span.text-sm.font-semibold.text-foreground.text-right` (querySelector picks the FIRST match in DOM order - that's the Weekly figure for whichever model group is listed first, same 'pick the first meter' convention as Claude's selector). IMPORTANT: the figure is '% remaining', not '% used' - invertPercent:true flips it (100 - value) so PercentUsed keeps its usual meaning and the color thresholds/gauge still make sense. Also important: this span only exists in the DOM while Settings > Models is actually open in Antigravity - Orbit has no way to open that screen itself (no UI-automation built), so scraping only succeeds if you happen to have that screen open when a refresh runs. Manual mode remains the reliable default for unattended use; live scraping works best if you keep Antigravity's Settings > Models open in the background."
+    }
+  }
+}

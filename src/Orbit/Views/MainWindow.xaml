@@ -1,0 +1,189 @@
+<Window x:Class="Orbit.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:Orbit.Controls"
+        mc:Ignorable="d"
+        Title="Orbit"
+        Width="360" Height="190"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual">
+
+    <Window.Resources>
+        <Storyboard x:Key="RefreshPulseStoryboard" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="RefreshIconRotateH" Storyboard.TargetProperty="Angle"
+                              From="0" To="360" Duration="0:0:0.7" />
+            <DoubleAnimation Storyboard.TargetName="RefreshIconRotateV" Storyboard.TargetProperty="Angle"
+                              From="0" To="360" Duration="0:0:0.7" />
+        </Storyboard>
+    </Window.Resources>
+
+    <!-- HoverZone fills the whole (fixed-size, never-animated) window and owns mouse enter/leave.
+         NotchBorder animates its Width/Height inside it for the visual grow/shrink, but hit-testing
+         happens against this stable, unanimated bound so the hover state can't flicker mid-animation
+         (WPF re-hit-tests every frame; an animated hit-test target briefly loses/regains the pointer
+         and fires spurious Enter/Leave pairs, which is what made expand/collapse feel jerky). The
+         trade-off: the whole notch footprint (not just the collapsed pill) is no longer click-through,
+         which is expected for this kind of anticipatory hover UI. -->
+    <Grid x:Name="HoverZone" Background="Transparent"
+          MouseEnter="NotchBorder_MouseEnter"
+          MouseLeave="NotchBorder_MouseLeave"
+          MouseLeftButtonUp="NotchBorder_MouseLeftButtonUp">
+        <Border x:Name="NotchBorder"
+                Width="140" Height="28"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
+                CornerRadius="0,0,16,16"
+                Background="#E6141414"
+                ClipToBounds="True">
+            <Grid>
+                <!-- Collapsed: status dot only, oriented to match the docked edge -->
+                <Grid x:Name="CollapsedContent" Opacity="1">
+                    <StackPanel x:Name="CollapsedHorizontalPanel" Orientation="Horizontal"
+                                HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Ellipse x:Name="AggregateStatusDotH" Width="9" Height="9" Fill="#3DDC84" Margin="0,0,6,0" />
+                        <TextBlock Text="Orbit" Foreground="#DDDDDD" FontSize="11" FontFamily="Segoe UI" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel x:Name="CollapsedVerticalPanel" Orientation="Vertical" Visibility="Collapsed"
+                                HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Ellipse x:Name="AggregateStatusDotV" Width="9" Height="9" Fill="#3DDC84" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Expanded: header + radial gauges, laid out horizontally or vertically per layout -->
+                <Grid x:Name="ExpandedContent" Opacity="0" Visibility="Collapsed">
+                    <Grid x:Name="ExpandedHorizontalPanel" Margin="18,14,18,14">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,10">
+                            <TextBlock Text="Orbit" Foreground="White" FontSize="13" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI" DockPanel.Dock="Left" VerticalAlignment="Center" />
+                            <Button x:Name="RefreshButtonH" DockPanel.Dock="Right"
+                                    Width="20" Height="20" Padding="0"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    Click="RefreshButton_Click"
+                                    ToolTip="Refresh now">
+                                <Path Data="M12,4 A8,8 0 1 0 19.3,9 M19,3 L19.3,9 L13.3,8.7"
+                                      Stroke="#CCCCCC" StrokeThickness="1.6"
+                                      Width="14" Height="14" Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
+                                    <Path.RenderTransform>
+                                        <RotateTransform x:Name="RefreshIconRotateH" Angle="0" />
+                                    </Path.RenderTransform>
+                                </Path>
+                            </Button>
+                        </DockPanel>
+
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Services}" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Rows="1" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:RadialGauge Diameter="64" RingThickness="6" Margin="6,0"
+                                                           HorizontalAlignment="Center"
+                                                           Percent="{Binding PercentUsed}"
+                                                           Accent="{Binding StatusBrush}"
+                                                           IsActive="{Binding IsActive}"
+                                                           StatusText="{Binding GaugeText}"
+                                                           DisplayLabel="{Binding DisplayName}"
+                                                           SubText="{Binding ResetDisplay}">
+                                        <controls:RadialGauge.ToolTip>
+                                            <ToolTip>
+                                                <StackPanel MinWidth="130">
+                                                    <DockPanel LastChildFill="False" Margin="0,0,0,5">
+                                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                                            <Ellipse Width="7" Height="7" Fill="{Binding StatusBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="White" FontSize="11.5" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding DisplayText}" DockPanel.Dock="Right" FontWeight="Bold" Foreground="{Binding StatusBrush}" FontSize="11.5" />
+                                                    </DockPanel>
+                                                    <Border Height="1" Background="#26FFFFFF" Margin="0,0,0,5" />
+                                                    <TextBlock Text="{Binding ResetDisplay}" Foreground="#B0B0B8" FontSize="11" Margin="0,0,0,3"
+                                                               Visibility="{Binding ResetVisibility}" />
+                                                    <TextBlock Text="{Binding LastUpdatedDisplay}" Foreground="#808088" FontSize="10.5" />
+                                                </StackPanel>
+                                            </ToolTip>
+                                        </controls:RadialGauge.ToolTip>
+                                    </controls:RadialGauge>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+
+                    <Grid x:Name="ExpandedVerticalPanel" Margin="14,16,14,16" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,12">
+                            <TextBlock Text="Orbit" Foreground="White" FontSize="13" FontWeight="SemiBold"
+                                       FontFamily="Segoe UI" DockPanel.Dock="Left" VerticalAlignment="Center" />
+                            <Button x:Name="RefreshButtonV" DockPanel.Dock="Right"
+                                    Width="20" Height="20" Padding="0"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    Click="RefreshButton_Click"
+                                    ToolTip="Refresh now">
+                                <Path Data="M12,4 A8,8 0 1 0 19.3,9 M19,3 L19.3,9 L13.3,8.7"
+                                      Stroke="#CCCCCC" StrokeThickness="1.6"
+                                      Width="14" Height="14" Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
+                                    <Path.RenderTransform>
+                                        <RotateTransform x:Name="RefreshIconRotateV" Angle="0" />
+                                    </Path.RenderTransform>
+                                </Path>
+                            </Button>
+                        </DockPanel>
+
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Services}" HorizontalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:RadialGauge Diameter="72" RingThickness="7" Margin="0,8"
+                                                           HorizontalAlignment="Center"
+                                                           Percent="{Binding PercentUsed}"
+                                                           Accent="{Binding StatusBrush}"
+                                                           IsActive="{Binding IsActive}"
+                                                           StatusText="{Binding GaugeText}"
+                                                           DisplayLabel="{Binding DisplayName}"
+                                                           SubText="{Binding ResetDisplay}">
+                                        <controls:RadialGauge.ToolTip>
+                                            <ToolTip>
+                                                <StackPanel MinWidth="130">
+                                                    <DockPanel LastChildFill="False" Margin="0,0,0,5">
+                                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                                            <Ellipse Width="7" Height="7" Fill="{Binding StatusBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="White" FontSize="11.5" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding DisplayText}" DockPanel.Dock="Right" FontWeight="Bold" Foreground="{Binding StatusBrush}" FontSize="11.5" />
+                                                    </DockPanel>
+                                                    <Border Height="1" Background="#26FFFFFF" Margin="0,0,0,5" />
+                                                    <TextBlock Text="{Binding ResetDisplay}" Foreground="#B0B0B8" FontSize="11" Margin="0,0,0,3"
+                                                               Visibility="{Binding ResetVisibility}" />
+                                                    <TextBlock Text="{Binding LastUpdatedDisplay}" Foreground="#808088" FontSize="10.5" />
+                                                </StackPanel>
+                                            </ToolTip>
+                                        </controls:RadialGauge.ToolTip>
+                                    </controls:RadialGauge>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

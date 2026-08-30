@@ -1,0 +1,13 @@
+﻿<Window x:Class="Orbit.Views.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Orbit - Sign in"
+        Width="900" Height="720"
+        WindowStartupLocation="CenterScreen">
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Margin="10,8"
+                   Text="Sign in to your account, then close this window. Your session is stored locally and reused for background usage checks - it is not shared with your normal browser profile."
+                   TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="12" />
+        <Grid x:Name="WebViewContainer" />
+    </DockPanel>
+</Window>
