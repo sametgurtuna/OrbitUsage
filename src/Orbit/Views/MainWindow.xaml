@@ -92,7 +92,7 @@
                                     <controls:RadialGauge Diameter="64" RingThickness="6" Margin="6,0"
                                                            HorizontalAlignment="Center"
                                                            Percent="{Binding PercentUsed}"
-                                                           Accent="{Binding StatusBrush}"
+                                                           Accent="{Binding AccentBrush}"
                                                            IsActive="{Binding IsActive}"
                                                            StatusText="{Binding GaugeText}"
                                                            DisplayLabel="{Binding DisplayName}"
@@ -102,10 +102,10 @@
                                                 <StackPanel MinWidth="130">
                                                     <DockPanel LastChildFill="False" Margin="0,0,0,5">
                                                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                                                            <Ellipse Width="7" Height="7" Fill="{Binding StatusBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                            <Ellipse Width="7" Height="7" Fill="{Binding AccentBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
                                                             <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="White" FontSize="11.5" />
                                                         </StackPanel>
-                                                        <TextBlock Text="{Binding DisplayText}" DockPanel.Dock="Right" FontWeight="Bold" Foreground="{Binding StatusBrush}" FontSize="11.5" />
+                                                        <TextBlock Text="{Binding DisplayText}" DockPanel.Dock="Right" FontWeight="Bold" Foreground="{Binding AccentBrush}" FontSize="11.5" />
                                                     </DockPanel>
                                                     <Border Height="1" Background="#26FFFFFF" Margin="0,0,0,5" />
                                                     <TextBlock Text="{Binding ResetDisplay}" Foreground="#B0B0B8" FontSize="11" Margin="0,0,0,3"
@@ -155,7 +155,7 @@
                                     <controls:RadialGauge Diameter="72" RingThickness="7" Margin="0,8"
                                                            HorizontalAlignment="Center"
                                                            Percent="{Binding PercentUsed}"
-                                                           Accent="{Binding StatusBrush}"
+                                                           Accent="{Binding AccentBrush}"
                                                            IsActive="{Binding IsActive}"
                                                            StatusText="{Binding GaugeText}"
                                                            DisplayLabel="{Binding DisplayName}"
@@ -165,10 +165,10 @@
                                                 <StackPanel MinWidth="130">
                                                     <DockPanel LastChildFill="False" Margin="0,0,0,5">
                                                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                                                            <Ellipse Width="7" Height="7" Fill="{Binding StatusBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                            <Ellipse Width="7" Height="7" Fill="{Binding AccentBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
                                                             <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="White" FontSize="11.5" />
                                                         </StackPanel>
-                                                        <TextBlock Text="{Binding DisplayText}" DockPanel.Dock="Right" FontWeight="Bold" Foreground="{Binding StatusBrush}" FontSize="11.5" />
+                                                        <TextBlock Text="{Binding DisplayText}" DockPanel.Dock="Right" FontWeight="Bold" Foreground="{Binding AccentBrush}" FontSize="11.5" />
                                                     </DockPanel>
                                                     <Border Height="1" Background="#26FFFFFF" Margin="0,0,0,5" />
                                                     <TextBlock Text="{Binding ResetDisplay}" Foreground="#B0B0B8" FontSize="11" Margin="0,0,0,3"

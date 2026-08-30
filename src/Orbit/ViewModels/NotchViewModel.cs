@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Orbit.Helpers;
 using Orbit.Models;
 
@@ -14,8 +14,8 @@ public class NotchViewModel : ViewModelBase
     private static readonly (string Key, string DisplayName, string AccentColorHex)[] KnownServices =
     {
         ("Claude", "Claude", "#D97757"),
-        ("ChatGPT", "ChatGPT", "#10A37F"),
-        ("Antigravity", "Antigravity", "#4285F4"),
+        ("ChatGPT", "ChatGPT", "#D8D8E0"),
+        ("Antigravity", "Antigravity", "#3B82F6"),
     };
 
     private bool _isExpanded;
@@ -134,9 +134,9 @@ public class NotchViewModel : ViewModelBase
     private void SeedMockData()
     {
         var claude = new ServiceUsageViewModel("Claude", "Claude", "#D97757") { PercentUsed = 42, ResetTimeText = "in 2h 15m", LastUpdatedUtc = DateTime.UtcNow };
-        var chatGpt = new ServiceUsageViewModel("ChatGPT", "ChatGPT", "#10A37F");
+        var chatGpt = new ServiceUsageViewModel("ChatGPT", "ChatGPT", "#D8D8E0");
         chatGpt.SetOverrideStatus(UsageStatus.NotImplemented, "Not implemented yet");
-        var antigravity = new ServiceUsageViewModel("Antigravity", "Antigravity", "#4285F4") { PercentUsed = 15, ResetTimeText = "in 3d", LastUpdatedUtc = DateTime.UtcNow };
+        var antigravity = new ServiceUsageViewModel("Antigravity", "Antigravity", "#3B82F6") { PercentUsed = 15, ResetTimeText = "in 3d", LastUpdatedUtc = DateTime.UtcNow };
 
         Services.Add(claude);
         Services.Add(chatGpt);

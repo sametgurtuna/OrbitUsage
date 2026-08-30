@@ -1,6 +1,8 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
+using Orbit.Controls;
 using Orbit.Helpers;
 using Orbit.Models;
 using Orbit.Services;
@@ -114,32 +116,32 @@ public partial class MainWindow : Window
 
     private static Storyboard BuildStoryboard(Size collapsed, Size expanded, bool expanding, double speedScale)
     {
-        var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
+        var ease = new CubicEase { EasingMode = expanding ? EasingMode.EaseOut : EasingMode.EaseInOut };
         var target = expanding ? expanded : collapsed;
         var storyboard = new Storyboard();
 
         TimeSpan Ms(double baseMs) => TimeSpan.FromMilliseconds(baseMs * speedScale);
 
-        var widthAnim = new DoubleAnimation { To = target.Width, Duration = Ms(200), EasingFunction = ease };
+        var widthAnim = new DoubleAnimation { To = target.Width, Duration = Ms(expanding ? 260 : 180), EasingFunction = ease };
         Storyboard.SetTargetName(widthAnim, "NotchBorder");
         Storyboard.SetTargetProperty(widthAnim, new PropertyPath(FrameworkElement.WidthProperty));
         storyboard.Children.Add(widthAnim);
 
-        var heightAnim = new DoubleAnimation { To = target.Height, Duration = Ms(200), EasingFunction = ease };
+        var heightAnim = new DoubleAnimation { To = target.Height, Duration = Ms(expanding ? 260 : 180), EasingFunction = ease };
         Storyboard.SetTargetName(heightAnim, "NotchBorder");
         Storyboard.SetTargetProperty(heightAnim, new PropertyPath(FrameworkElement.HeightProperty));
         storyboard.Children.Add(heightAnim);
 
         var (fadeInName, fadeOutName, fadeInDelayMs, fadeInDurationMs) = expanding
-            ? ("ExpandedContent", "CollapsedContent", 80, 150)
-            : ("CollapsedContent", "ExpandedContent", 80, 120);
+            ? ("ExpandedContent", "CollapsedContent", 60, 200)
+            : ("CollapsedContent", "ExpandedContent", 60, 120);
 
-        var fadeIn = new DoubleAnimation { To = 1, BeginTime = Ms(fadeInDelayMs), Duration = Ms(fadeInDurationMs) };
+        var fadeIn = new DoubleAnimation { To = 1, BeginTime = Ms(fadeInDelayMs), Duration = Ms(fadeInDurationMs), EasingFunction = ease };
         Storyboard.SetTargetName(fadeIn, fadeInName);
         Storyboard.SetTargetProperty(fadeIn, new PropertyPath(UIElement.OpacityProperty));
         storyboard.Children.Add(fadeIn);
 
-        var fadeOut = new DoubleAnimation { To = 0, Duration = Ms(80) };
+        var fadeOut = new DoubleAnimation { To = 0, Duration = Ms(60) };
         Storyboard.SetTargetName(fadeOut, fadeOutName);
         Storyboard.SetTargetProperty(fadeOut, new PropertyPath(UIElement.OpacityProperty));
         storyboard.Children.Add(fadeOut);
@@ -152,7 +154,7 @@ public partial class MainWindow : Window
 
         var hideFrames = new ObjectAnimationUsingKeyFrames();
         hideFrames.KeyFrames.Add(new DiscreteObjectKeyFrame(Visibility.Collapsed,
-            KeyTime.FromTimeSpan(expanding ? Ms(fadeInDelayMs) : Ms(200))));
+            KeyTime.FromTimeSpan(expanding ? Ms(fadeInDelayMs) : Ms(180))));
         Storyboard.SetTargetName(hideFrames, fadeOutName);
         Storyboard.SetTargetProperty(hideFrames, new PropertyPath(UIElement.VisibilityProperty));
         storyboard.Children.Add(hideFrames);
@@ -197,6 +199,7 @@ public partial class MainWindow : Window
         if (_viewModel.IsExpanded) return;
         _viewModel.IsExpanded = true;
         _expandStoryboard.Begin(this);
+        TriggerGaugeAnimations();
     }
 
     public void Collapse()
@@ -204,6 +207,30 @@ public partial class MainWindow : Window
         if (!_viewModel.IsExpanded) return;
         _viewModel.IsExpanded = false;
         _collapseStoryboard.Begin(this);
+    }
+
+    private void TriggerGaugeAnimations()
+    {
+        var targetPanel = _layout == NotchLayout.RightCenter ? ExpandedVerticalPanel : ExpandedHorizontalPanel;
+        var gauges = FindVisualChildren<RadialGauge>(targetPanel).ToList();
+        for (int i = 0; i < gauges.Count; i++)
+        {
+            gauges[i].AnimateFill(delayMs: 60 + (i * 70));
+        }
+    }
+
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject? depObj) where T : DependencyObject
+    {
+        if (depObj == null) yield break;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+        {
+            var child = VisualTreeHelper.GetChild(depObj, i);
+            if (child is T t)
+                yield return t;
+
+            foreach (var childOfChild in FindVisualChildren<T>(child))
+                yield return childOfChild;
+        }
     }
 
     // HoverZone (the whole fixed-size window, see MainWindow.xaml) owns these - expand the instant

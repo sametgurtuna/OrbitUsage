@@ -1,4 +1,4 @@
-﻿<Window x:Class="Orbit.Views.SettingsWindow"
+<Window x:Class="Orbit.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Orbit - Settings"
@@ -101,7 +101,22 @@
             <RadioButton x:Name="AnimSpeedNormalRadio" Content="Normal" GroupName="AnimSpeed" Margin="0,0,18,0" Checked="AnimSpeedRadio_Checked" />
             <RadioButton x:Name="AnimSpeedFluidRadio" Content="Fluid" GroupName="AnimSpeed" Checked="AnimSpeedRadio_Checked" />
         </StackPanel>
-        <TextBlock Text="How quickly the notch grows/shrinks on hover - Fast is snappiest, Fluid is the slowest and smoothest." Margin="0,0,0,14" TextWrapping="Wrap" Foreground="#888" FontSize="11" />
+        <TextBlock Text="Local REST API (Stream Deck, Rainmeter, CLI)" FontWeight="SemiBold" Margin="0,0,0,4" />
+        <Border BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,14">
+            <StackPanel>
+                <DockPanel Margin="0,0,0,6">
+                    <CheckBox x:Name="LocalApiEnabledCheck" Content="Enable Local REST API server" DockPanel.Dock="Left" VerticalAlignment="Center" />
+                    <Button x:Name="OpenApiInBrowserButton" Content="Open Web Dashboard..." DockPanel.Dock="Right"
+                            Click="OpenApiInBrowserButton_Click" Padding="6,2" HorizontalAlignment="Right" />
+                </DockPanel>
+                <DockPanel Margin="0,2,0,4">
+                    <TextBlock Text="Port:" VerticalAlignment="Center" Width="40" />
+                    <TextBox x:Name="LocalApiPortBox" Width="60" Text="18923" />
+                    <TextBlock Text="http://127.0.0.1:18923/api/usage" Foreground="#0066CC" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="11" />
+                </DockPanel>
+                <TextBlock Text="Exposes live quota endpoints for Elgato Stream Deck, Rainmeter skins, and terminal commands (orbit status)." Foreground="#888" FontSize="10" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
 
         <CheckBox x:Name="StartWithWindowsCheck" Content="Start with Windows" Margin="0,0,0,14" />
 

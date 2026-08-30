@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using Orbit.Helpers;
 using Orbit.Models;
 using Orbit.Services;
@@ -107,6 +107,9 @@ public partial class SettingsWindow : Window
             NotchAnimationSpeed.Fluid => AnimSpeedFluidRadio,
             _ => AnimSpeedNormalRadio,
         }).IsChecked = true;
+
+        LocalApiEnabledCheck.IsChecked = settings.EnableLocalApi;
+        LocalApiPortBox.Text = settings.LocalApiPort.ToString();
 
         _initialLayout = settings.Layout;
         _initialTargetMonitorDeviceName = settings.TargetMonitorDeviceName;
@@ -246,6 +249,23 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void OpenApiInBrowserButton_Click(object sender, RoutedEventArgs e)
+    {
+        int port = int.TryParse(LocalApiPortBox.Text, out var p) ? p : 18923;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = $"http://127.0.0.1:{port}/",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"Could not open browser: {ex.Message}";
+        }
+    }
+
     private void ReloadSelectorsButton_Click(object sender, RoutedEventArgs e)
     {
         _selectorService.Reload();
@@ -297,6 +317,10 @@ public partial class SettingsWindow : Window
         settings.AnimationSpeed = AnimSpeedFastRadio.IsChecked == true ? NotchAnimationSpeed.Fast
             : AnimSpeedFluidRadio.IsChecked == true ? NotchAnimationSpeed.Fluid
             : NotchAnimationSpeed.Normal;
+
+        settings.EnableLocalApi = LocalApiEnabledCheck.IsChecked == true;
+        if (int.TryParse(LocalApiPortBox.Text, out var apiPort))
+            settings.LocalApiPort = Math.Clamp(apiPort, 1024, 65535);
 
         settings.StartWithWindows = StartWithWindowsCheck.IsChecked == true;
 

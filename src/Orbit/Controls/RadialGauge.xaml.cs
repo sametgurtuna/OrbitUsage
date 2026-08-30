@@ -117,7 +117,7 @@ public partial class RadialGauge : System.Windows.Controls.UserControl
         {
             From = (double)e.OldValue,
             To = (double)e.NewValue,
-            Duration = TimeSpan.FromMilliseconds(650),
+            Duration = TimeSpan.FromMilliseconds(1000),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         gauge.BeginAnimation(AnimatedPercentProperty, animation);
@@ -159,6 +159,30 @@ public partial class RadialGauge : System.Windows.Controls.UserControl
         SubLabelText.Text = SubText;
         SubLabelText.FontSize = Math.Max(7.0, diameter * 0.09);
         SubLabelText.Visibility = string.IsNullOrEmpty(SubText) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>Plays a smooth, cinematic sweep fill animation from 0 to target Percent.</summary>
+    public void AnimateFill(double delayMs = 0)
+    {
+        if (!IsLoaded) return;
+
+        double target = IsActive ? Percent : 0;
+        if (target > 0.01)
+        {
+            var fillAnim = new DoubleAnimation
+            {
+                From = 0.0,
+                To = target,
+                BeginTime = TimeSpan.FromMilliseconds(delayMs),
+                Duration = TimeSpan.FromMilliseconds(1100),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            BeginAnimation(AnimatedPercentProperty, fillAnim);
+        }
+        else
+        {
+            SetValue(AnimatedPercentProperty, 0.0);
+        }
     }
 
     /// <summary>Builds a ring-slice path starting at 12 o'clock and sweeping clockwise by percent*360 degrees.</summary>

@@ -32,6 +32,7 @@ public class ServiceUsageViewModel : ViewModelBase
                 OnPropertyChanged(nameof(GaugeText));
                 OnPropertyChanged(nameof(IsActive));
                 OnPropertyChanged(nameof(StatusBrush));
+                OnPropertyChanged(nameof(AccentBrush));
                 OnPropertyChanged(nameof(FullToolTipText));
             }
         }
@@ -133,7 +134,7 @@ public class ServiceUsageViewModel : ViewModelBase
     public bool IsActive => Status is UsageStatus.Normal or UsageStatus.Warning or UsageStatus.Critical
         || (Status == UsageStatus.Unavailable && PercentUsed > 0);
 
-    /// <summary>Status-driven color (green/amber/red/gray) used for the gauge arc, more legible at a glance than the brand accent.</summary>
+    /// <summary>Status-driven color (green/amber/red/gray) used for the aggregate status dot.</summary>
     public Brush StatusBrush => Status switch
     {
         UsageStatus.Critical => new SolidColorBrush(Color.FromRgb(0xE5, 0x4B, 0x4B)),
@@ -141,6 +142,29 @@ public class ServiceUsageViewModel : ViewModelBase
         UsageStatus.Unavailable or UsageStatus.NotImplemented => new SolidColorBrush(Color.FromRgb(0x8A, 0x8A, 0x8A)),
         _ => new SolidColorBrush(Color.FromRgb(0x3D, 0xDC, 0x84)),
     };
+
+    /// <summary>Brand-specific color brush for this service (Claude terracotta, ChatGPT off-white, Antigravity blue).</summary>
+    public Brush AccentBrush
+    {
+        get
+        {
+            if (Status == UsageStatus.NotImplemented)
+                return new SolidColorBrush(Color.FromRgb(0x66, 0x66, 0x70));
+
+            if (Status == UsageStatus.Critical)
+                return new SolidColorBrush(Color.FromRgb(0xE5, 0x4B, 0x4B));
+
+            try
+            {
+                var color = (Color)System.Windows.Media.ColorConverter.ConvertFromString(AccentColorHex);
+                return new SolidColorBrush(color);
+            }
+            catch
+            {
+                return new SolidColorBrush(Color.FromRgb(0xDD, 0xDD, 0xDD));
+            }
+        }
+    }
 
     public ServiceUsageViewModel(string serviceKey, string displayName, string accentColorHex)
     {
@@ -160,6 +184,7 @@ public class ServiceUsageViewModel : ViewModelBase
         OnPropertyChanged(nameof(GaugeText));
         OnPropertyChanged(nameof(IsActive));
         OnPropertyChanged(nameof(StatusBrush));
+        OnPropertyChanged(nameof(AccentBrush));
     }
 
     private static UsageStatus ComputeStatus(double percent) => percent switch

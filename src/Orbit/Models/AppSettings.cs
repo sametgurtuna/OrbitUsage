@@ -1,4 +1,4 @@
-﻿namespace Orbit.Models;
+namespace Orbit.Models;
 
 public class AppSettings
 {
@@ -16,6 +16,12 @@ public class AppSettings
 
     /// <summary>How fast the notch grows/shrinks on hover. See <see cref="NotchAnimationSpeed"/>.</summary>
     public NotchAnimationSpeed AnimationSpeed { get; set; } = NotchAnimationSpeed.Normal;
+
+    /// <summary>Whether to host a lightweight local REST API on localhost for Stream Deck, Rainmeter, and CLI scripts.</summary>
+    public bool EnableLocalApi { get; set; } = true;
+
+    /// <summary>Port for the local REST API server (default: 18923).</summary>
+    public int LocalApiPort { get; set; } = 18923;
 
     public Dictionary<string, ServiceSettings> Services { get; set; } = new()
     {
