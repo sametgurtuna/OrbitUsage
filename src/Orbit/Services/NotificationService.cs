@@ -10,13 +10,22 @@ namespace Orbit.Services;
 /// </summary>
 public class NotificationService
 {
-    private readonly TrayIconManager _trayIconManager;
+    private readonly TrayIconManager? _trayIconManager;
     private readonly SettingsService _settingsService;
+    private readonly Action<string, string, ToolTipIcon>? _notifyAction;
+    private readonly Action? _soundAction;
 
     public NotificationService(TrayIconManager trayIconManager, SettingsService settingsService)
     {
         _trayIconManager = trayIconManager;
         _settingsService = settingsService;
+    }
+
+    public NotificationService(SettingsService settingsService, Action<string, string, ToolTipIcon> notifyAction, Action? soundAction = null)
+    {
+        _settingsService = settingsService;
+        _notifyAction = notifyAction;
+        _soundAction = soundAction;
     }
 
     public void CheckAndNotify(string serviceKey, UsageResult result)
@@ -36,7 +45,19 @@ public class NotificationService
             _ => 0
         };
 
-        // If usage dropped below previous threshold (e.g. quota reset), reset tracking
+        // Check for Quota Reset: previously in warning/critical state (>= 80%) and now dropped to low usage (< 30%)
+        bool isReset = (serviceSettings.LastNotifiedThreshold >= 80 || serviceSettings.LastKnownPercent >= 75) && percent < 30;
+        if (isReset)
+        {
+            serviceSettings.LastNotifiedThreshold = 0;
+            if (serviceSettings.NotifyOnReset)
+            {
+                SendResetAlert(serviceKey, percent, settings.PlayNotificationSound);
+            }
+            return;
+        }
+
+        // If usage dropped below previous threshold, adjust tracking
         if (currentThreshold < serviceSettings.LastNotifiedThreshold)
         {
             serviceSettings.LastNotifiedThreshold = currentThreshold;
@@ -57,12 +78,61 @@ public class NotificationService
             if (shouldNotify)
             {
                 serviceSettings.LastNotifiedThreshold = currentThreshold;
-                SendThresholdAlert(serviceKey, percent, currentThreshold, result.ResetTimeText);
+                SendThresholdAlert(serviceKey, percent, currentThreshold, result.ResetTimeText, settings.PlayNotificationSound);
             }
         }
     }
 
-    private void SendThresholdAlert(string serviceKey, double percent, int threshold, string? resetTimeText)
+    private void SendResetAlert(string serviceKey, double percent, bool playSound)
+    {
+        string title = $"Orbit - {serviceKey} Kotası Sıfırlandı! 🎉";
+        string message = $"Tebrikler! {serviceKey} kotanız sıfırlandı ve yenilendi ({percent:0}% kullanım). Tam kapasiteyle kodlamaya devam edebilirsiniz.";
+
+        DispatchNotification(title, message, ToolTipIcon.Info);
+
+        if (playSound)
+        {
+            TriggerSound();
+        }
+    }
+
+    private void DispatchNotification(string title, string message, ToolTipIcon icon)
+    {
+        if (_notifyAction != null)
+        {
+            _notifyAction(title, message, icon);
+        }
+        else
+        {
+            _trayIconManager?.ShowNotification(title, message, icon);
+        }
+    }
+
+    private void TriggerSound()
+    {
+        if (_soundAction != null)
+        {
+            _soundAction();
+        }
+        else
+        {
+            PlaySound();
+        }
+    }
+
+    public static void PlaySound()
+    {
+        try
+        {
+            System.Media.SystemSounds.Asterisk.Play();
+        }
+        catch
+        {
+            try { System.Media.SystemSounds.Beep.Play(); } catch { }
+        }
+    }
+
+    private void SendThresholdAlert(string serviceKey, double percent, int threshold, string? resetTimeText, bool playSound)
     {
         string resetInfo = !string.IsNullOrWhiteSpace(resetTimeText)
             ? $"\nReset: {resetTimeText}"
@@ -87,6 +157,11 @@ public class NotificationService
             )
         };
 
-        _trayIconManager.ShowNotification(title, message, icon);
+        DispatchNotification(title, message, icon);
+
+        if (playSound)
+        {
+            TriggerSound();
+        }
     }
 }

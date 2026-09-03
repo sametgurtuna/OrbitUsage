@@ -199,47 +199,156 @@
         </Grid>
 
         <!-- ========================================================= -->
-        <!-- TOP-CENTER PANEL (When user selects TopCenter in Settings)-->
+        <!-- TOP-CENTER DOCK LAYOUT (Horizontal Notch & Dynamic Island)-->
         <!-- ========================================================= -->
-        <Border x:Name="TopCenterDockBorder"
-                Height="64"
-                HorizontalAlignment="Center" VerticalAlignment="Top"
-                CornerRadius="0,0,18,18"
-                Background="{DynamicResource NotchBackgroundBrush}"
-                BorderBrush="{DynamicResource NotchBorderBrush}"
-                BorderThickness="1"
-                Visibility="Collapsed"
-                Padding="16,6"
-                ContextMenu="{StaticResource DockContextMenu}">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="28" Direction="270" ShadowDepth="6" Opacity="0.75" Color="#000000" />
-            </Border.Effect>
-            <ItemsControl ItemsSource="{Binding Services}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Margin="12,0" Cursor="Hand" Background="Transparent"
-                              MouseEnter="ServiceItem_MouseEnter"
-                              MouseLeave="ServiceItem_MouseLeave"
-                              MouseLeftButtonUp="ServiceItem_MouseLeftButtonUp">
-                            <controls:RadialGauge Diameter="38"
-                                                  RingThickness="3"
-                                                  Percent="{Binding DockPercentUsed}"
-                                                  StatusText="{Binding DockPercentDisplay}"
-                                                  Accent="{Binding AccentBrush}"
-                                                  CenterImageSource="{Binding ServiceIconImageSource}"
-                                                  CenterIcon="{Binding ServiceIconGeometry}"
-                                                  ShowIconInCenter="True"
-                                                  IsActive="{Binding IsActive}" />
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
+        <Grid x:Name="TopDockPanel" Visibility="Collapsed">
+
+            <!-- Floating Callout Flyout Card (Appears directly below the horizontal notch) -->
+            <Grid x:Name="TopFlyoutCard"
+                  Width="276"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Top"
+                  Margin="0,68,0,0"
+                  Opacity="0"
+                  MouseEnter="FlyoutCard_MouseEnter"
+                  MouseLeave="FlyoutCard_MouseLeave">
+                <Grid.RenderTransform>
+                    <TransformGroup>
+                        <TranslateTransform x:Name="TopFlyoutTranslateX" X="0" />
+                        <TranslateTransform x:Name="TopFlyoutTranslateY" Y="0" />
+                    </TransformGroup>
+                </Grid.RenderTransform>
+
+                <!-- Speech Bubble Triangular Callout Notch (points UP to active service item) -->
+                <Path Data="M 0,9 L 9,0 L 18,9"
+                      Fill="{DynamicResource FlyoutCardBackgroundBrush}"
+                      Stroke="{DynamicResource FlyoutCardBorderBrush}"
+                      StrokeThickness="1"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Top"
+                      Margin="0,-8,0,0" />
+
+                <!-- Card Body Border with Soft Drop Shadow -->
+                <Border Background="{DynamicResource FlyoutCardBackgroundBrush}"
+                        BorderBrush="{DynamicResource FlyoutCardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="16"
+                        Padding="18,16">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="32" ShadowDepth="4" Direction="270" Opacity="0.8" Color="#000000" />
+                    </Border.Effect>
+                    <StackPanel>
+                        <!-- Header: Service Icon + Name Usage + Relative Time -->
+                        <DockPanel Margin="0,0,0,14" LastChildFill="False">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                <Grid Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Rectangle Width="16" Height="16" Fill="{DynamicResource FlyoutTextPrimaryBrush}"
+                                               Visibility="{Binding HoveredService.ImageLogoVisibility}">
+                                        <Rectangle.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding HoveredService.ServiceIconImageSource}" Stretch="Uniform" />
+                                        </Rectangle.OpacityMask>
+                                    </Rectangle>
+                                    <Path Width="15" Height="15" Stretch="Uniform" Fill="{DynamicResource FlyoutTextPrimaryBrush}"
+                                          Data="{Binding HoveredService.ServiceIconGeometry}"
+                                          Visibility="{Binding HoveredService.VectorLogoVisibility}" />
+                                </Grid>
+                                <TextBlock Text="{Binding HoveredService.DisplayName, StringFormat='{}{0} Usage'}"
+                                           FontSize="14.5" FontWeight="SemiBold" Foreground="{DynamicResource FlyoutTextPrimaryBrush}"
+                                           FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding HoveredService.RelativeTimeDisplay}"
+                                       FontSize="11.5" Foreground="{DynamicResource FlyoutTextMutedBrush}"
+                                       FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <!-- Top Limit (Current session / 5 hour limit) -->
+                        <DockPanel LastChildFill="False" Margin="0,0,0,7">
+                            <TextBlock DockPanel.Dock="Left" Text="{Binding HoveredService.TopLimitTitle}"
+                                       FontSize="12.5" FontWeight="Medium" Foreground="{DynamicResource FlyoutTextSecondaryBrush}" FontFamily="Segoe UI Variable, Segoe UI" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding HoveredService.TopLimitResetDisplay}"
+                                       FontSize="11.5" Foreground="{DynamicResource FlyoutTextMutedBrush}" FontFamily="Segoe UI Variable, Segoe UI" />
+                        </DockPanel>
+                        <ProgressBar Height="6" Minimum="0" Maximum="100"
+                                     Value="{Binding HoveredService.TopLimitPercent, Mode=OneWay}"
+                                     Foreground="{Binding HoveredService.TopLimitBrush}"
+                                     Background="{DynamicResource FlyoutProgressBarTrackBrush}"
+                                     BorderThickness="0"
+                                     Template="{StaticResource SleekProgressBarTemplate}"
+                                     Margin="0,0,0,5" />
+                        <TextBlock Text="{Binding HoveredService.TopLimitUsedDisplay}"
+                                   FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource FlyoutTextSubBrush}" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Margin="0,0,0,16" />
+
+                        <!-- Bottom Limit (Weekly limit / All models) -->
+                        <DockPanel LastChildFill="False" Margin="0,0,0,7">
+                            <TextBlock DockPanel.Dock="Left" Text="{Binding HoveredService.BottomLimitTitle}"
+                                       FontSize="12.5" FontWeight="Medium" Foreground="{DynamicResource FlyoutTextSecondaryBrush}" FontFamily="Segoe UI Variable, Segoe UI" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding HoveredService.BottomLimitResetDisplay}"
+                                       FontSize="11.5" Foreground="{DynamicResource FlyoutTextMutedBrush}" FontFamily="Segoe UI Variable, Segoe UI" />
+                        </DockPanel>
+                        <ProgressBar Height="6" Minimum="0" Maximum="100"
+                                     Value="{Binding HoveredService.BottomLimitPercent, Mode=OneWay}"
+                                     Foreground="{Binding HoveredService.BottomLimitBrush}"
+                                     Background="{DynamicResource FlyoutProgressBarTrackBrush}"
+                                     BorderThickness="0"
+                                     Template="{StaticResource SleekProgressBarTemplate}"
+                                     Margin="0,0,0,5" />
+                        <TextBlock Text="{Binding HoveredService.BottomLimitUsedDisplay}"
+                                   FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource FlyoutTextSubBrush}" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Margin="0,0,0,2" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Organic Curved Top Notch Container pinned to the top screen edge -->
+            <Grid x:Name="TopDockContainer"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Top"
+                  MouseEnter="TopDockContainer_MouseEnter"
+                  MouseLeave="TopDockContainer_MouseLeave"
+                  ContextMenu="{StaticResource DockContextMenu}">
+                <Grid.RenderTransform>
+                    <TranslateTransform x:Name="TopDockTranslate" Y="0" />
+                </Grid.RenderTransform>
+
+                <!-- Notch Hardware Shell (Pill shape with rounded bottom corners and smooth shadow) -->
+                <Border Background="{DynamicResource DockSilhouetteBrush}"
+                        BorderBrush="{DynamicResource NotchBorderBrush}"
+                        BorderThickness="1,0,1,1"
+                        CornerRadius="0,0,20,20"
+                        Padding="20,7,20,9">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="28" Direction="270" ShadowDepth="4" Opacity="0.8" Color="#000000" />
+                    </Border.Effect>
+                    <ItemsControl ItemsSource="{Binding Services}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="10,0" Cursor="Hand" Background="Transparent"
+                                      MouseEnter="ServiceItem_MouseEnter"
+                                      MouseLeave="ServiceItem_MouseLeave"
+                                      MouseLeftButtonUp="ServiceItem_MouseLeftButtonUp">
+                                    <controls:RadialGauge Diameter="42"
+                                                          RingThickness="3.5"
+                                                          Percent="{Binding DockPercentUsed}"
+                                                          StatusText="{Binding DockPercentDisplay}"
+                                                          Accent="{Binding AccentBrush}"
+                                                          CenterImageSource="{Binding ServiceIconImageSource}"
+                                                          CenterIcon="{Binding ServiceIconGeometry}"
+                                                          ShowIconInCenter="True"
+                                                          IsActive="{Binding IsActive}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+            </Grid>
+
+        </Grid>
 
     </Grid>
 </Window>

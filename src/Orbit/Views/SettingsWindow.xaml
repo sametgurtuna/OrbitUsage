@@ -478,6 +478,7 @@
                                                 <CheckBox x:Name="ClaudeNotify80Check" IsChecked="{Binding ClaudeNotify80}" Content="80%" Style="{StaticResource ChipCheckStyle}" />
                                                 <CheckBox x:Name="ClaudeNotify95Check" IsChecked="{Binding ClaudeNotify95}" Content="95%" Style="{StaticResource ChipCheckStyle}" />
                                                 <CheckBox x:Name="ClaudeNotify100Check" IsChecked="{Binding ClaudeNotify100}" Content="100%" Style="{StaticResource ChipCheckStyle}" />
+                                                <CheckBox x:Name="ClaudeNotifyResetCheck" IsChecked="{Binding ClaudeNotifyReset}" Content="🎉 Reset" Style="{StaticResource ChipCheckStyle}" ToolTip="Notify when quota is refreshed" />
                                             </StackPanel>
                                         </DockPanel>
                                     </StackPanel>
@@ -527,6 +528,7 @@
                                                 <CheckBox x:Name="AntigravityNotify80Check" IsChecked="{Binding AntigravityNotify80}" Content="80%" Style="{StaticResource ChipCheckStyle}" />
                                                 <CheckBox x:Name="AntigravityNotify95Check" IsChecked="{Binding AntigravityNotify95}" Content="95%" Style="{StaticResource ChipCheckStyle}" />
                                                 <CheckBox x:Name="AntigravityNotify100Check" IsChecked="{Binding AntigravityNotify100}" Content="100%" Style="{StaticResource ChipCheckStyle}" />
+                                                <CheckBox x:Name="AntigravityNotifyResetCheck" IsChecked="{Binding AntigravityNotifyReset}" Content="🎉 Reset" Style="{StaticResource ChipCheckStyle}" ToolTip="Notify when quota is refreshed" />
                                             </StackPanel>
                                         </DockPanel>
                                     </StackPanel>
@@ -675,6 +677,23 @@
                                     </DockPanel>
                                 </Border>
                             </StackPanel>
+                        </Border>
+
+                        <!-- Notification Sound Card -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Left">
+                                    <TextBlock Text="Notification Sound (Windows Chime)" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" />
+                                    <TextBlock Text="Play system chime when quota resets or warning thresholds trigger" FontSize="11" Foreground="{DynamicResource SettingsTextMutedBrush}" Margin="0,2,0,0" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                    <Button x:Name="TestSoundButton" Content="🔔 Test Sound" Style="{StaticResource GhostButtonStyle}"
+                                            Padding="10,4" Margin="0,0,12,0" FontSize="11" Command="{Binding TestSoundCommand}" />
+                                    <CheckBox x:Name="PlaySoundCheck" IsChecked="{Binding PlayNotificationSound}" Style="{StaticResource ToggleSwitchStyle}" />
+                                </StackPanel>
+                            </DockPanel>
                         </Border>
 
                         <!-- Refresh Interval Card -->

@@ -19,6 +19,7 @@ public class ServiceSettings
     public bool NotifyAt80 { get; set; } = true;
     public bool NotifyAt95 { get; set; } = true;
     public bool NotifyAt100 { get; set; } = true;
+    public bool NotifyOnReset { get; set; } = true;
 
     [System.Text.Json.Serialization.JsonIgnore]
     public int LastNotifiedThreshold { get; set; }

@@ -3,7 +3,7 @@
 ; and automatically adds Orbit to the user's PATH so 'orbit status' works in any terminal.
 
 #define MyAppName "Orbit"
-#define MyAppVersion "0.1.2"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Orbit"
 #define MyAppExeName "Orbit.exe"
 
@@ -16,7 +16,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=output
-OutputBaseFilename=OrbitSetup-v0.1.2
+OutputBaseFilename=OrbitSetup-v0.2.0
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

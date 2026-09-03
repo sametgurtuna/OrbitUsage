@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sametgurtuna/OrbitUsage/releases"><img src="https://img.shields.io/badge/Release-v0.1.2-blue.svg?style=flat-square" alt="Release v0.1.2" /></a>
+  <a href="https://github.com/sametgurtuna/OrbitUsage/releases"><img src="https://img.shields.io/badge/Release-v0.2.0-blue.svg?style=flat-square" alt="Release v0.2.0" /></a>
   <a href="https://dotnet.microsoft.com/download/dotnet/8.0"><img src="https://img.shields.io/badge/.NET-8.0--windows-512BD4.svg?style=flat-square" alt=".NET 8" /></a>
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D4.svg?style=flat-square" alt="Windows 10 and 11" />
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="MIT License" />
@@ -22,14 +22,22 @@ With a subtle mouse hover or global hotkey press (`Win + Alt + O`), Orbit glides
 
 ## Key Capabilities
 
-### Organic Curved Edge Dock
-A custom WPF window crafted with organic concave fillets, designed to feel like an integrated hardware extension of your monitor. Features ultra-smooth cubic bezier slide-in/out animations and interactive hover telemetry.
+### Organic Curved Edge Dock & Top-Center Horizontal Notch
+Orbit adapts to your preferred screen edge:
+* **Right-Center (Vertical Dock):** A sculpted organic dock with concave fillets attached to the right monitor edge.
+* **Top-Center (Horizontal Notch / Dynamic Island):** A sleek horizontal hardware pill anchored to the top of your screen, gliding down on hover and tucking away smoothly with cubic bezier curves.
 
 ### Authentic Adaptive Visuals
 Utilizes vector-rendered gauges with authentic provider brand silhouettes (Claude starburst, Antigravity delta, OpenAI swirl). In dark mode, icons render in high-contrast crisp white; in light mode, they automatically transition to refined anthracite with brand color accents.
 
 ### Intelligent Speech-Bubble Flyout
-Hovering over any radial gauge summons a dedicated speech-bubble flyout card pointing directly to the active service. It displays granular multi-tier quotas (e.g. Gemini 5-hour rolling limits vs. weekly limits), visual progress meters, and dynamic countdown timers (e.g., `Resets in 4h 48m`).
+Hovering over any radial gauge summons a dedicated speech-bubble flyout card pointing directly to the active service (pointing right from the vertical dock or pointing up from the horizontal notch). It displays granular multi-tier quotas (e.g. Gemini 5-hour rolling limits vs. weekly limits), visual progress meters, and dynamic countdown timers (e.g., `Resets in 4h 48m`).
+
+### Proactive Quota Reset & Critical Threshold Alerts
+Stay ahead of subscription exhaustion:
+* **Threshold Warnings (80%, 95%, 100%):** Receive desktop notifications when usage reaches critical levels.
+* **Quota Reset Celebrations:** Automatically alerted with a desktop notification (`Orbit - {Service} Kotası Sıfırlandı! 🎉`) and native Windows chime sound when your quota is refreshed.
+* Configurable per-service, with a built-in sound test button in Settings.
 
 ### Global Keyboard Toggle (`Win + Alt + O`)
 Instantly slide the dock into view or stow it away using the customizable global shortcut. Pin and unpin buttons permit keeping the telemetry persistently pinned to your workspace during intensive coding marathons.
@@ -60,7 +68,7 @@ Invoking `orbit` with command-line arguments turns the binary into a high-speed 
 Download the latest self-contained setup installer from the [Releases](https://github.com/sametgurtuna/OrbitUsage/releases) page:
 
 ```text
-OrbitSetup-v0.1.2.exe
+OrbitSetup-v0.2.0.exe
 ```
 
 The installer:
@@ -184,7 +192,7 @@ orbit --help
  / _ \|  _ \| __ )|_ _|_   _|
 | | | | |_) |  _ \ | |  | |  
 | |_| |  _ <| |_) || |  | |  
- \___/|_| \_\____/|___| |_|  v0.1.2
+ \___/|_| \_\____/|___| |_|  v0.2.0
 
 Claude 3.7 / Opus    [========------------]  42%  Resets in 2h 15m
 Google Antigravity   [==------------------]  08%  Resets in 4h 48m
@@ -239,7 +247,7 @@ usage/
 │       ├── ViewModels/      # MVVM Notch and Settings ViewModels
 │       └── Views/           # WPF Main Dock, Settings, and Login Windows
 ├── tests/
-│   └── Orbit.Tests/         # Comprehensive xUnit test suite (41+ tests)
+│   └── Orbit.Tests/         # Comprehensive xUnit test suite (50 tests)
 ├── build-installer.ps1      # Automated release publisher & setup compiler
 └── Orbit.slnx               # Modern Visual Studio / .NET solution
 ```

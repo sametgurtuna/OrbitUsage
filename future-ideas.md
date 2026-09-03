@@ -1,10 +1,10 @@
 # Orbit - Gelecek Fikirleri
 
 Bu doküman `new-features.md`'deki önceki öneri listesinden **sonrası** için hazırlandı. Şu an itibarıyla
-threshold bildirimleri, multi-monitor desteği, Local REST API, CLI ve Inno Setup kurulumu tamamlanmış
-durumda. Aşağıdaki fikirler hem eski listede kalan açık maddeleri (light theme, sparkline, snooze, auto
-update, Gemini/ChatGPT scraper'larının olgunlaştırılması) hem de bu incelemede ortaya çıkan yeni fırsatları
-kapsıyor. Yine Impact / Effort / Priority (Impact - Effort + 3) formatında puanladım.
+v0.2.0 sürümüyle birlikte threshold ve kota sıfırlanma (reset) bildirimleri + Windows sistem sesi efekti,
+Top-Center yatay notch / dynamic island modu, multi-monitor desteği, Local REST API, CLI ve Inno Setup kurulumu
+tamamlanmış durumdadır. Aşağıdaki fikirler sonraki sürümler için yol haritasını kapsamaktadır.
+Yine Impact / Effort / Priority (Impact - Effort + 3) formatında puanlanmıştır.
 
 | # | Fikir | Impact | Effort | Priority | Kategori |
 |---|-------|:---:|:---:|:---:|---|

@@ -34,6 +34,7 @@ public class SettingsViewModel : ViewModelBase
     private bool _claudeNotify80;
     private bool _claudeNotify95;
     private bool _claudeNotify100;
+    private bool _claudeNotifyReset;
 
     // Services - Antigravity
     private bool _antigravityEnabled;
@@ -42,6 +43,7 @@ public class SettingsViewModel : ViewModelBase
     private bool _antigravityNotify80;
     private bool _antigravityNotify95;
     private bool _antigravityNotify100;
+    private bool _antigravityNotifyReset;
 
     // Appearance
     private NotchLayout _layout;
@@ -56,6 +58,7 @@ public class SettingsViewModel : ViewModelBase
     private int _refreshIntervalMinutes = 15;
     private bool _startWithWindows;
     private bool _alwaysOnTop;
+    private bool _playNotificationSound = true;
     private bool _hotkeyEnabled;
     private string _hotkeyModifiers = "Win+Alt";
     private string _hotkeyKey = "O";
@@ -73,6 +76,7 @@ public class SettingsViewModel : ViewModelBase
     public ICommand ClaudeLoginCommand { get; }
     public ICommand ReloadSelectorsCommand { get; }
     public ICommand OpenApiInBrowserCommand { get; }
+    public ICommand TestSoundCommand { get; }
 
     public SettingsViewModel(
         SettingsService settingsService,
@@ -104,8 +108,15 @@ public class SettingsViewModel : ViewModelBase
         ClaudeLoginCommand = new RelayCommand(async () => await ExecuteClaudeLoginAsync());
         ReloadSelectorsCommand = new RelayCommand(ExecuteReloadSelectors);
         OpenApiInBrowserCommand = new RelayCommand(ExecuteOpenApiInBrowser);
+        TestSoundCommand = new RelayCommand(ExecuteTestSound);
 
         LoadSettings();
+    }
+
+    private void ExecuteTestSound()
+    {
+        NotificationService.PlaySound();
+        StatusText = "Played test notification chime";
     }
 
     #region Properties - Claude
@@ -146,6 +157,12 @@ public class SettingsViewModel : ViewModelBase
         set => SetField(ref _claudeNotify100, value);
     }
 
+    public bool ClaudeNotifyReset
+    {
+        get => _claudeNotifyReset;
+        set => SetField(ref _claudeNotifyReset, value);
+    }
+
     #endregion
 
     #region Properties - Antigravity
@@ -184,6 +201,12 @@ public class SettingsViewModel : ViewModelBase
     {
         get => _antigravityNotify100;
         set => SetField(ref _antigravityNotify100, value);
+    }
+
+    public bool AntigravityNotifyReset
+    {
+        get => _antigravityNotifyReset;
+        set => SetField(ref _antigravityNotifyReset, value);
     }
 
     #endregion
@@ -346,6 +369,12 @@ public class SettingsViewModel : ViewModelBase
         set => SetField(ref _alwaysOnTop, value);
     }
 
+    public bool PlayNotificationSound
+    {
+        get => _playNotificationSound;
+        set => SetField(ref _playNotificationSound, value);
+    }
+
     public bool HotkeyEnabled
     {
         get => _hotkeyEnabled;
@@ -416,6 +445,7 @@ public class SettingsViewModel : ViewModelBase
         _claudeNotify80 = claude.NotifyAt80;
         _claudeNotify95 = claude.NotifyAt95;
         _claudeNotify100 = claude.NotifyAt100;
+        _claudeNotifyReset = claude.NotifyOnReset;
 
         var antigravity = settings.Services.GetValueOrDefault("Antigravity") ?? new ServiceSettings { Enabled = true, ManualMode = true };
         _antigravityEnabled = antigravity.Enabled;
@@ -424,6 +454,7 @@ public class SettingsViewModel : ViewModelBase
         _antigravityNotify80 = antigravity.NotifyAt80;
         _antigravityNotify95 = antigravity.NotifyAt95;
         _antigravityNotify100 = antigravity.NotifyAt100;
+        _antigravityNotifyReset = antigravity.NotifyOnReset;
 
         _refreshIntervalMinutes = settings.RefreshIntervalMinutes;
         _monitors = ScreenPositionHelper.GetMonitors();
@@ -439,6 +470,7 @@ public class SettingsViewModel : ViewModelBase
 
         _startWithWindows = settings.StartWithWindows;
         _alwaysOnTop = settings.AlwaysOnTop;
+        _playNotificationSound = settings.PlayNotificationSound;
         _hotkeyEnabled = settings.HotkeyEnabled;
         _hotkeyModifiers = settings.HotkeyModifiers ?? "Win+Alt";
         _hotkeyKey = settings.HotkeyKey ?? "O";
@@ -490,6 +522,7 @@ public class SettingsViewModel : ViewModelBase
         claude.NotifyAt80 = ClaudeNotify80;
         claude.NotifyAt95 = ClaudeNotify95;
         claude.NotifyAt100 = ClaudeNotify100;
+        claude.NotifyOnReset = ClaudeNotifyReset;
 
         if (!settings.Services.TryGetValue("Antigravity", out var antigravity))
         {
@@ -502,6 +535,7 @@ public class SettingsViewModel : ViewModelBase
         antigravity.NotifyAt80 = AntigravityNotify80;
         antigravity.NotifyAt95 = AntigravityNotify95;
         antigravity.NotifyAt100 = AntigravityNotify100;
+        antigravity.NotifyOnReset = AntigravityNotifyReset;
 
         settings.RefreshIntervalMinutes = Math.Clamp(RefreshIntervalMinutes, 5, 120);
         settings.TargetMonitorDeviceName = SelectedMonitorDeviceName;
@@ -516,6 +550,7 @@ public class SettingsViewModel : ViewModelBase
 
         settings.StartWithWindows = StartWithWindows;
         settings.AlwaysOnTop = AlwaysOnTop;
+        settings.PlayNotificationSound = PlayNotificationSound;
         settings.HotkeyEnabled = HotkeyEnabled;
         settings.HotkeyModifiers = HotkeyModifiers;
         settings.HotkeyKey = HotkeyKey;

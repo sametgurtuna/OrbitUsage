@@ -154,16 +154,29 @@ public partial class MainWindow : Window
                 }
                 else
                 {
-                    if (TopCenterDockBorder != null && TopCenterDockBorder.IsVisible)
+                    if (TopDockContainer != null && TopDockContainer.IsVisible)
                     {
-                        var borderPt = TopCenterDockBorder.PointFromScreen(screenPt);
-                        var bounds = new Rect(0, 0, TopCenterDockBorder.ActualWidth, TopCenterDockBorder.ActualHeight);
-                        if (!bounds.Contains(borderPt))
+                        var dockPt = TopDockContainer.PointFromScreen(screenPt);
+                        var dockBounds = new Rect(0, 0, TopDockContainer.ActualWidth, TopDockContainer.ActualHeight);
+                        if (dockBounds.Contains(dockPt))
                         {
-                            handled = true;
-                            return (IntPtr)NativeMethods.HTTRANSPARENT;
+                            return IntPtr.Zero;
                         }
                     }
+
+                    if (TopFlyoutCard != null && TopFlyoutCard.IsVisible && TopFlyoutCard.Opacity > 0.05)
+                    {
+                        var cardPt = TopFlyoutCard.PointFromScreen(screenPt);
+                        var cardBounds = new Rect(0, 0, TopFlyoutCard.ActualWidth, TopFlyoutCard.ActualHeight);
+                        if (cardBounds.Contains(cardPt))
+                        {
+                            return IntPtr.Zero;
+                        }
+                    }
+
+                    // Everywhere else is click-through
+                    handled = true;
+                    return (IntPtr)NativeMethods.HTTRANSPARENT;
                 }
             }
             catch
@@ -210,7 +223,12 @@ public partial class MainWindow : Window
         bool vertical = _layout == NotchLayout.RightCenter;
 
         RightDockPanel.Visibility = vertical ? Visibility.Visible : Visibility.Collapsed;
-        TopCenterDockBorder.Visibility = vertical ? Visibility.Collapsed : Visibility.Visible;
+        TopDockPanel.Visibility = vertical ? Visibility.Collapsed : Visibility.Visible;
+
+        // Reset transforms
+        if (RightDockTranslate != null) RightDockTranslate.X = 0;
+        if (TopDockTranslate != null) TopDockTranslate.Y = 0;
+        _isDockSlidOut = false;
 
         string? targetMonitor = targetMonitorOverride ?? settings?.TargetMonitorDeviceName;
         double offsetX = offsetXOverride ?? settings?.NotchOffsetX ?? 0;
@@ -224,12 +242,6 @@ public partial class MainWindow : Window
 
     public void ToggleDock()
     {
-        if (_layout != NotchLayout.RightCenter)
-        {
-            Visibility = Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-            return;
-        }
-
         if (Visibility != Visibility.Visible)
         {
             Visibility = Visibility.Visible;
@@ -265,7 +277,15 @@ public partial class MainWindow : Window
             Duration = TimeSpan.FromMilliseconds(240 * scale),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
-        RightDockTranslate?.BeginAnimation(TranslateTransform.XProperty, anim);
+
+        if (_layout == NotchLayout.RightCenter)
+        {
+            RightDockTranslate?.BeginAnimation(TranslateTransform.XProperty, anim);
+        }
+        else
+        {
+            TopDockTranslate?.BeginAnimation(TranslateTransform.YProperty, anim);
+        }
     }
 
     public void SlideDockOut()
@@ -273,20 +293,43 @@ public partial class MainWindow : Window
         _isDockSlidOut = true;
         HideFlyout();
         double scale = GetAnimationSpeedScale();
-        // Leaves 14px sleek tab peeking at the screen edge (width 68 - 54 = 14)
-        var anim = new DoubleAnimation
+
+        if (_layout == NotchLayout.RightCenter)
         {
-            To = 54.0,
-            Duration = TimeSpan.FromMilliseconds(220 * scale),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        RightDockTranslate?.BeginAnimation(TranslateTransform.XProperty, anim);
+            // Leaves 14px sleek tab peeking at the screen edge (width 68 - 54 = 14)
+            var anim = new DoubleAnimation
+            {
+                To = 54.0,
+                Duration = TimeSpan.FromMilliseconds(220 * scale),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+            };
+            RightDockTranslate?.BeginAnimation(TranslateTransform.XProperty, anim);
+        }
+        else
+        {
+            // Leaves ~14px sleek tab peeking down from the top screen edge
+            var anim = new DoubleAnimation
+            {
+                To = -46.0,
+                Duration = TimeSpan.FromMilliseconds(220 * scale),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+            };
+            TopDockTranslate?.BeginAnimation(TranslateTransform.YProperty, anim);
+        }
     }
 
     private bool IsMouseOverDockOrFlyout()
     {
-        return (RightDockContainer != null && RightDockContainer.IsMouseOver) ||
-               (FlyoutCard != null && FlyoutCard.IsMouseOver);
+        if (_layout == NotchLayout.RightCenter)
+        {
+            return (RightDockContainer != null && RightDockContainer.IsMouseOver) ||
+                   (FlyoutCard != null && FlyoutCard.IsMouseOver);
+        }
+        else
+        {
+            return (TopDockContainer != null && TopDockContainer.IsMouseOver) ||
+                   (TopFlyoutCard != null && TopFlyoutCard.IsMouseOver);
+        }
     }
 
     private void RightDockContainer_MouseEnter(object sender, MouseEventArgs e)
@@ -299,6 +342,24 @@ public partial class MainWindow : Window
     }
 
     private void RightDockContainer_MouseLeave(object sender, MouseEventArgs e)
+    {
+        if (!_isDockPinned)
+        {
+            _dockAutoHideTimer?.Stop();
+            _dockAutoHideTimer?.Start();
+        }
+    }
+
+    private void TopDockContainer_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _dockAutoHideTimer?.Stop();
+        if (_isDockSlidOut)
+        {
+            SlideDockIn();
+        }
+    }
+
+    private void TopDockContainer_MouseLeave(object sender, MouseEventArgs e)
     {
         if (!_isDockPinned)
         {
@@ -322,30 +383,60 @@ public partial class MainWindow : Window
 
             try
             {
-                // Ensure card layout is measured
-                if (FlyoutCard.ActualHeight == 0)
-                {
-                    FlyoutCard.Measure(new Size(320, 400));
-                    FlyoutCard.Arrange(new Rect(0, 0, FlyoutCard.DesiredSize.Width, FlyoutCard.DesiredSize.Height));
-                }
-
-                // Gauge circle is 44px diameter at the top of the item Grid
-                var itemPos = fe.TransformToAncestor(this).Transform(new Point(0, 0));
-                double gaugeCenterY = itemPos.Y + 22.0;
-                double cardHeight = FlyoutCard.ActualHeight > 0 ? FlyoutCard.ActualHeight : 185.0;
-                double targetY = gaugeCenterY - (cardHeight / 2.0);
-
-                // Clamp within window bounds
-                targetY = Math.Clamp(targetY, 15, Math.Max(15, ActualHeight - cardHeight - 15));
-
                 double scale = GetAnimationSpeedScale();
-                var yAnim = new DoubleAnimation
+
+                if (_layout == NotchLayout.RightCenter)
                 {
-                    To = targetY,
-                    Duration = TimeSpan.FromMilliseconds(160 * scale),
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                };
-                FlyoutTranslateY.BeginAnimation(TranslateTransform.YProperty, yAnim);
+                    // Ensure card layout is measured
+                    if (FlyoutCard.ActualHeight == 0)
+                    {
+                        FlyoutCard.Measure(new Size(320, 400));
+                        FlyoutCard.Arrange(new Rect(0, 0, FlyoutCard.DesiredSize.Width, FlyoutCard.DesiredSize.Height));
+                    }
+
+                    // Gauge circle is 44px diameter at the top of the item Grid
+                    var itemPos = fe.TransformToAncestor(this).Transform(new Point(0, 0));
+                    double gaugeCenterY = itemPos.Y + 22.0;
+                    double cardHeight = FlyoutCard.ActualHeight > 0 ? FlyoutCard.ActualHeight : 185.0;
+                    double targetY = gaugeCenterY - (cardHeight / 2.0);
+
+                    // Clamp within window bounds
+                    targetY = Math.Clamp(targetY, 15, Math.Max(15, ActualHeight - cardHeight - 15));
+
+                    var yAnim = new DoubleAnimation
+                    {
+                        To = targetY,
+                        Duration = TimeSpan.FromMilliseconds(160 * scale),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                    };
+                    FlyoutTranslateY.BeginAnimation(TranslateTransform.YProperty, yAnim);
+                }
+                else
+                {
+                    if (TopFlyoutCard.ActualWidth == 0)
+                    {
+                        TopFlyoutCard.Measure(new Size(320, 400));
+                        TopFlyoutCard.Arrange(new Rect(0, 0, TopFlyoutCard.DesiredSize.Width, TopFlyoutCard.DesiredSize.Height));
+                    }
+
+                    var itemPos = fe.TransformToAncestor(this).Transform(new Point(0, 0));
+                    double itemCenterX = itemPos.X + fe.ActualWidth / 2.0;
+                    double windowCenterX = ActualWidth / 2.0;
+                    double targetTranslateX = itemCenterX - windowCenterX;
+
+                    // Clamp so card doesn't clip window edges
+                    double cardW = TopFlyoutCard.ActualWidth > 0 ? TopFlyoutCard.ActualWidth : 276.0;
+                    double maxOffset = Math.Max(0, (ActualWidth - cardW) / 2.0 - 15);
+                    targetTranslateX = Math.Clamp(targetTranslateX, -maxOffset, maxOffset);
+
+                    var xAnim = new DoubleAnimation
+                    {
+                        To = targetTranslateX,
+                        Duration = TimeSpan.FromMilliseconds(160 * scale),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                    };
+                    TopFlyoutTranslateX.BeginAnimation(TranslateTransform.XProperty, xAnim);
+                }
             }
             catch
             {
@@ -409,15 +500,31 @@ public partial class MainWindow : Window
             Duration = TimeSpan.FromMilliseconds(160 * scale),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
-        var slideAnim = new DoubleAnimation
+
+        if (_layout == NotchLayout.RightCenter)
         {
-            From = -14.0,
-            To = 0.0,
-            Duration = TimeSpan.FromMilliseconds(180 * scale),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        FlyoutCard.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
-        FlyoutTranslateX.BeginAnimation(TranslateTransform.XProperty, slideAnim);
+            var slideAnim = new DoubleAnimation
+            {
+                From = -14.0,
+                To = 0.0,
+                Duration = TimeSpan.FromMilliseconds(180 * scale),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            FlyoutCard.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+            FlyoutTranslateX.BeginAnimation(TranslateTransform.XProperty, slideAnim);
+        }
+        else
+        {
+            var slideAnim = new DoubleAnimation
+            {
+                From = -10.0,
+                To = 0.0,
+                Duration = TimeSpan.FromMilliseconds(180 * scale),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            TopFlyoutCard.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+            TopFlyoutTranslateY.BeginAnimation(TranslateTransform.YProperty, slideAnim);
+        }
     }
 
     private void HideFlyout()
@@ -429,14 +536,29 @@ public partial class MainWindow : Window
             Duration = TimeSpan.FromMilliseconds(130 * scale),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
         };
-        var slideAnim = new DoubleAnimation
+
+        if (_layout == NotchLayout.RightCenter)
         {
-            To = -10.0,
-            Duration = TimeSpan.FromMilliseconds(130 * scale),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        FlyoutCard.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
-        FlyoutTranslateX.BeginAnimation(TranslateTransform.XProperty, slideAnim);
+            var slideAnim = new DoubleAnimation
+            {
+                To = -10.0,
+                Duration = TimeSpan.FromMilliseconds(130 * scale),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+            };
+            FlyoutCard.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+            FlyoutTranslateX.BeginAnimation(TranslateTransform.XProperty, slideAnim);
+        }
+        else
+        {
+            var slideAnim = new DoubleAnimation
+            {
+                To = -8.0,
+                Duration = TimeSpan.FromMilliseconds(130 * scale),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+            };
+            TopFlyoutCard.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+            TopFlyoutTranslateY.BeginAnimation(TranslateTransform.YProperty, slideAnim);
+        }
     }
 
     private void ServiceItem_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)

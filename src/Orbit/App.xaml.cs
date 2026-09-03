@@ -248,7 +248,7 @@ public partial class App : System.Windows.Application
 
         if (cmd is "-v" or "--version")
         {
-            Console.WriteLine("Orbit version 0.3.0 (Windows x64)");
+            Console.WriteLine("Orbit version 0.2.0 (Windows x64)");
             return true;
         }
 

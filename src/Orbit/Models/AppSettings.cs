@@ -10,6 +10,9 @@ public class AppSettings
     /// <summary>Whether the notch window stays Topmost above all windows. If false, it stays on the desktop level.</summary>
     public bool AlwaysOnTop { get; set; } = true;
 
+    /// <summary>Whether to play Windows system chime sound when alerts and quota reset notifications arrive.</summary>
+    public bool PlayNotificationSound { get; set; } = true;
+
     /// <summary>Whether the global keyboard shortcut is active to expand/collapse Orbit.</summary>
     public bool HotkeyEnabled { get; set; } = true;
 

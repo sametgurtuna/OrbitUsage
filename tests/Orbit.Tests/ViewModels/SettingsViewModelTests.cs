@@ -106,4 +106,41 @@ public class SettingsViewModelTests
 
         Assert.True(closed);
     }
+
+    [Fact]
+    public void NotifyResetAndSoundSettings_BindAndPersistCorrectly()
+    {
+        var settings = CreateSettings();
+        settings.Current.PlayNotificationSound = false;
+        settings.Current.Services["Claude"].NotifyOnReset = true;
+        settings.Current.Services["Antigravity"].NotifyOnReset = false;
+
+        var vm = new SettingsViewModel(settings);
+
+        Assert.False(vm.PlayNotificationSound);
+        Assert.True(vm.ClaudeNotifyReset);
+        Assert.False(vm.AntigravityNotifyReset);
+
+        vm.PlayNotificationSound = true;
+        vm.ClaudeNotifyReset = false;
+        vm.AntigravityNotifyReset = true;
+
+        vm.SaveCommand.Execute(null);
+
+        Assert.True(settings.Current.PlayNotificationSound);
+        Assert.False(settings.Current.Services["Claude"].NotifyOnReset);
+        Assert.True(settings.Current.Services["Antigravity"].NotifyOnReset);
+    }
+
+    [Fact]
+    public void TestSoundCommand_ExecutesAndSetsStatusText()
+    {
+        var settings = CreateSettings();
+        var vm = new SettingsViewModel(settings);
+
+        vm.TestSoundCommand.Execute(null);
+
+        Assert.Contains("notification chime", vm.StatusText);
+    }
 }
+

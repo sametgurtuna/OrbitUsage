@@ -271,7 +271,7 @@ public class LocalApiService : IAsyncDisposable
         await WriteJsonAsync(res, new
         {
             app = "Orbit",
-            version = "1.3.0",
+            version = "0.2.0",
             aggregateStatus = _viewModel.AggregateStatus.ToString(),
             serviceCount = _viewModel.Services.Count,
             isRefreshing = _viewModel.IsRefreshing
