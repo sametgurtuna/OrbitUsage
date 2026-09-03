@@ -28,6 +28,8 @@ public class TrayIconManager : IDisposable
         showHideItem.Click += (_, _) => ToggleVisibility();
         var reloadItem = new ToolStripMenuItem("Reload Now");
         reloadItem.Click += async (_, _) => await _scraper.RefreshNowAsync();
+        var launchAntigravityItem = new ToolStripMenuItem("Launch Antigravity (Port 9222)");
+        launchAntigravityItem.Click += (_, _) => Helpers.AntigravityLauncherHelper.Launch();
         var settingsItem = new ToolStripMenuItem("Settings...");
         settingsItem.Click += (_, _) => OpenSettings();
         var exitItem = new ToolStripMenuItem("Exit");
@@ -35,6 +37,7 @@ public class TrayIconManager : IDisposable
 
         menu.Items.Add(showHideItem);
         menu.Items.Add(reloadItem);
+        menu.Items.Add(launchAntigravityItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(exitItem);
@@ -81,23 +84,55 @@ public class TrayIconManager : IDisposable
         _openSettingsWindow.Activate();
     }
 
-    /// <summary>Draws a small filled-circle icon at runtime so the app doesn't need a shipped .ico asset.</summary>
+    /// <summary>Loads the high-resolution Orbit application icon for the Windows system tray.</summary>
     private static Icon CreateTrayIcon()
     {
+        try
+        {
+            var streamInfo = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Resources/orbit.ico", UriKind.Absolute));
+            if (streamInfo?.Stream != null)
+            {
+                return new Icon(streamInfo.Stream, 32, 32);
+            }
+        }
+        catch { }
+
+        try
+        {
+            var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(exePath) && System.IO.File.Exists(exePath))
+            {
+                var ico = Icon.ExtractAssociatedIcon(exePath);
+                if (ico != null) return ico;
+            }
+        }
+        catch { }
+
         using var bitmap = new Bitmap(32, 32);
         using (var g = Graphics.FromImage(bitmap))
         {
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.Clear(Color.Transparent);
-            using var brush = new SolidBrush(Color.FromArgb(255, 0xD9, 0x77, 0x57)); // Claude-adjacent orange
+            using var brush = new SolidBrush(Color.FromArgb(255, 0x8B, 0x5C, 0xF6));
             g.FillEllipse(brush, 4, 4, 24, 24);
         }
-        return Icon.FromHandle(bitmap.GetHicon());
+
+        var hIcon = bitmap.GetHicon();
+        try
+        {
+            using var tempIcon = Icon.FromHandle(hIcon);
+            return (Icon)tempIcon.Clone();
+        }
+        finally
+        {
+            Helpers.NativeMethods.DestroyIcon(hIcon);
+        }
     }
 
     public void Dispose()
     {
         _notifyIcon.Visible = false;
+        _notifyIcon.Icon?.Dispose();
         _notifyIcon.Dispose();
     }
 }

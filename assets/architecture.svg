@@ -1,0 +1,103 @@
+<svg width="880" height="280" viewBox="0 0 880 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="connGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0.4" />
+    </linearGradient>
+  </defs>
+
+  <rect width="880" height="280" rx="16" fill="#08090E" stroke="#1A1D2B" stroke-width="1.2" />
+
+  <!-- Column 1: Providers / Sources -->
+  <g transform="translate(36, 32)">
+    <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="700" fill="#64748B" letter-spacing="1">DATA SOURCES</text>
+    
+    <!-- Antigravity Box -->
+    <g transform="translate(0, 16)">
+      <rect width="210" height="52" rx="10" fill="#0E111C" stroke="#252C42" stroke-width="1" />
+      <circle cx="24" cy="26" r="6" fill="#38BDF8" />
+      <text x="40" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#F8FAFC">Google Antigravity</text>
+      <text x="40" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">agy CLI (Zero-Config JSON)</text>
+    </g>
+
+    <!-- Claude Box -->
+    <g transform="translate(0, 80)">
+      <rect width="210" height="52" rx="10" fill="#0E111C" stroke="#252C42" stroke-width="1" />
+      <circle cx="24" cy="26" r="6" fill="#D97757" />
+      <text x="40" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#F8FAFC">Anthropic Claude</text>
+      <text x="40" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Isolated WebView2 Profile</text>
+    </g>
+
+    <!-- ChatGPT Box -->
+    <g transform="translate(0, 144)">
+      <rect width="210" height="52" rx="10" fill="#0E111C" stroke="#252C42" stroke-width="1" />
+      <circle cx="24" cy="26" r="6" fill="#10B981" />
+      <text x="40" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#F8FAFC">ChatGPT / OpenAI</text>
+      <text x="40" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Secure Scraper Session</text>
+    </g>
+  </g>
+
+  <!-- Connectors (Column 1 to Column 2) -->
+  <path d="M 246,74 L 320,135" stroke="url(#connGrad)" stroke-width="1.8" stroke-dasharray="4 4" />
+  <path d="M 246,138 L 320,135" stroke="url(#connGrad)" stroke-width="1.8" stroke-dasharray="4 4" />
+  <path d="M 246,202 L 320,135" stroke="url(#connGrad)" stroke-width="1.8" stroke-dasharray="4 4" />
+
+  <!-- Column 2: Orbit Core Engine -->
+  <g transform="translate(320, 48)">
+    <text x="0" y="-16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="700" fill="#64748B" letter-spacing="1">ORBIT ENGINE</text>
+    <rect width="240" height="174" rx="14" fill="#121626" stroke="#333D5E" stroke-width="1.2" />
+
+    <g transform="translate(20, 24)">
+      <circle cx="8" cy="8" r="4" fill="#8B5CF6" />
+      <text x="22" y="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#F8FAFC">Scraper Scheduler</text>
+      <text x="22" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Non-blocking background polling</text>
+    </g>
+
+    <line x1="20" y1="70" x2="220" y2="70" stroke="#222940" stroke-width="1" />
+
+    <g transform="translate(20, 84)">
+      <circle cx="8" cy="8" r="4" fill="#38BDF8" />
+      <text x="22" y="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#F8FAFC">Threshold Alerts</text>
+      <text x="22" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Toast notifications at 80% &amp; 95%</text>
+    </g>
+
+    <line x1="20" y1="130" x2="220" y2="130" stroke="#222940" stroke-width="1" />
+
+    <g transform="translate(20, 144)">
+      <circle cx="8" cy="8" r="4" fill="#10B981" />
+      <text x="22" y="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#F8FAFC">Isolated AppData Storage</text>
+      <text x="22" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Zero repo footprint</text>
+    </g>
+  </g>
+
+  <!-- Connectors (Column 2 to Column 3) -->
+  <path d="M 560,135 L 634,74" stroke="url(#connGrad)" stroke-width="1.8" stroke-dasharray="4 4" />
+  <path d="M 560,135 L 634,138" stroke="url(#connGrad)" stroke-width="1.8" stroke-dasharray="4 4" />
+  <path d="M 560,135 L 634,202" stroke="url(#connGrad)" stroke-width="1.8" stroke-dasharray="4 4" />
+
+  <!-- Column 3: Output Surfaces -->
+  <g transform="translate(634, 32)">
+    <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="700" fill="#64748B" letter-spacing="1">SURFACES &amp; INTEGRATIONS</text>
+
+    <!-- Edge Notch UI -->
+    <g transform="translate(0, 16)">
+      <rect width="210" height="52" rx="10" fill="#0E111C" stroke="#252C42" stroke-width="1" />
+      <text x="18" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#F8FAFC">Screen Edge Dock</text>
+      <text x="18" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="400" fill="#38BDF8">Win+Alt+O slide &amp; flyout card</text>
+    </g>
+
+    <!-- Local REST API -->
+    <g transform="translate(0, 80)">
+      <rect width="210" height="52" rx="10" fill="#0E111C" stroke="#252C42" stroke-width="1" />
+      <text x="18" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#F8FAFC">Local REST API (:18923)</text>
+      <text x="18" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="400" fill="#A855F7">Stream Deck &amp; Rainmeter</text>
+    </g>
+
+    <!-- Terminal CLI -->
+    <g transform="translate(0, 144)">
+      <rect width="210" height="52" rx="10" fill="#0E111C" stroke="#252C42" stroke-width="1" />
+      <text x="18" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#F8FAFC">Terminal CLI Mode</text>
+      <text x="18" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="400" fill="#10B981">orbit status / orbit refresh</text>
+    </g>
+  </g>
+</svg>

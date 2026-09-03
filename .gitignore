@@ -9,12 +9,18 @@ publish/
 .vs/
 .idea/
 .vscode/
+TestResults/
 
 ## Inno Setup & Packaging Outputs
 installer/output/
 installer/Output/
 *.iss.bak
 
-## Crash logs and local test data
+## Crash logs, temporary dumps, and local test data
 *.log
+*.tmp
+*.bak
+out.txt
 scratch/
+scratch_*.json
+*.local.json

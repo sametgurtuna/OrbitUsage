@@ -1,4 +1,4 @@
-﻿using Orbit.Models;
+using Orbit.Models;
 using Microsoft.Web.WebView2.Core;
 
 namespace Orbit.Services;
@@ -20,6 +20,23 @@ public class AntigravityUsageProvider : IUsageProvider
     public string ServiceKey => "Antigravity";
     public bool RequiresSharedWebView => false;
 
-    public Task<UsageResult> GetUsageAsync(CoreWebView2? webView, ServiceSelectorConfig config, CancellationToken ct) =>
-        ChromeDevToolsUsageScraper.ScrapeAsync("Antigravity", config, ct);
+    public async Task<UsageResult> GetUsageAsync(CoreWebView2? webView, ServiceSelectorConfig config, CancellationToken ct)
+    {
+        // 1. Primary approach: Scrape headless via official agy CLI ('agy -p "/usage"')
+        var cliResult = await AgyCliUsageScraper.ScrapeAsync(ct);
+        if (cliResult.Success)
+        {
+            return cliResult;
+        }
+
+        // 2. Secondary fallback: Chrome DevTools Protocol if IDE is running with remote-debugging-port
+        var cdpResult = await ChromeDevToolsUsageScraper.ScrapeAsync("Antigravity", config, ct);
+        if (cdpResult.Success)
+        {
+            return cdpResult;
+        }
+
+        // If both failed, return the primary CLI error for diagnostic clarity
+        return cliResult;
+    }
 }

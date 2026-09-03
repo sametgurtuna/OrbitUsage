@@ -45,6 +45,42 @@ public partial class RadialGauge : System.Windows.Controls.UserControl
         nameof(RingThickness), typeof(double), typeof(RadialGauge),
         new PropertyMetadata(6.0, OnAppearanceChanged));
 
+    public static readonly DependencyProperty HeaderLabelProperty = DependencyProperty.Register(
+        nameof(HeaderLabel), typeof(string), typeof(RadialGauge),
+        new PropertyMetadata(string.Empty, OnAppearanceChanged));
+
+    public static readonly DependencyProperty HeaderIconProperty = DependencyProperty.Register(
+        nameof(HeaderIcon), typeof(Geometry), typeof(RadialGauge),
+        new PropertyMetadata(null, OnAppearanceChanged));
+
+    public static readonly DependencyProperty CenterIconProperty = DependencyProperty.Register(
+        nameof(CenterIcon), typeof(Geometry), typeof(RadialGauge),
+        new PropertyMetadata(null, OnAppearanceChanged));
+
+    public static readonly DependencyProperty CenterImageSourceProperty = DependencyProperty.Register(
+        nameof(CenterImageSource), typeof(ImageSource), typeof(RadialGauge),
+        new PropertyMetadata(null, OnAppearanceChanged));
+
+    public static readonly DependencyProperty ShowIconInCenterProperty = DependencyProperty.Register(
+        nameof(ShowIconInCenter), typeof(bool), typeof(RadialGauge),
+        new PropertyMetadata(true, OnAppearanceChanged));
+
+    public static readonly DependencyProperty SubtitleProperty = DependencyProperty.Register(
+        nameof(Subtitle), typeof(string), typeof(RadialGauge),
+        new PropertyMetadata("left", OnAppearanceChanged));
+
+    public static readonly DependencyProperty WindowLabelProperty = DependencyProperty.Register(
+        nameof(WindowLabel), typeof(string), typeof(RadialGauge),
+        new PropertyMetadata(string.Empty, OnAppearanceChanged));
+
+    public static readonly DependencyProperty StatusLabelProperty = DependencyProperty.Register(
+        nameof(StatusLabel), typeof(string), typeof(RadialGauge),
+        new PropertyMetadata(string.Empty, OnAppearanceChanged));
+
+    public static readonly DependencyProperty StatusBrushProperty = DependencyProperty.Register(
+        nameof(StatusBrush), typeof(Brush), typeof(RadialGauge),
+        new PropertyMetadata(null, OnAppearanceChanged));
+
     private static readonly DependencyProperty AnimatedPercentProperty = DependencyProperty.Register(
         "AnimatedPercent", typeof(double), typeof(RadialGauge),
         new PropertyMetadata(0.0, OnAnimatedPercentChanged));
@@ -98,6 +134,60 @@ public partial class RadialGauge : System.Windows.Controls.UserControl
         set => SetValue(RingThicknessProperty, value);
     }
 
+    public string HeaderLabel
+    {
+        get => (string)GetValue(HeaderLabelProperty);
+        set => SetValue(HeaderLabelProperty, value);
+    }
+
+    public Geometry? HeaderIcon
+    {
+        get => (Geometry?)GetValue(HeaderIconProperty);
+        set => SetValue(HeaderIconProperty, value);
+    }
+
+    public Geometry? CenterIcon
+    {
+        get => (Geometry?)GetValue(CenterIconProperty);
+        set => SetValue(CenterIconProperty, value);
+    }
+
+    public ImageSource? CenterImageSource
+    {
+        get => (ImageSource?)GetValue(CenterImageSourceProperty);
+        set => SetValue(CenterImageSourceProperty, value);
+    }
+
+    public bool ShowIconInCenter
+    {
+        get => (bool)GetValue(ShowIconInCenterProperty);
+        set => SetValue(ShowIconInCenterProperty, value);
+    }
+
+    public string Subtitle
+    {
+        get => (string)GetValue(SubtitleProperty);
+        set => SetValue(SubtitleProperty, value);
+    }
+
+    public string WindowLabel
+    {
+        get => (string)GetValue(WindowLabelProperty);
+        set => SetValue(WindowLabelProperty, value);
+    }
+
+    public string StatusLabel
+    {
+        get => (string)GetValue(StatusLabelProperty);
+        set => SetValue(StatusLabelProperty, value);
+    }
+
+    public Brush? StatusBrush
+    {
+        get => (Brush?)GetValue(StatusBrushProperty);
+        set => SetValue(StatusBrushProperty, value);
+    }
+
     public RadialGauge()
     {
         InitializeComponent();
@@ -142,23 +232,65 @@ public partial class RadialGauge : System.Windows.Controls.UserControl
         TrackEllipse.Height = diameter;
         TrackEllipse.StrokeThickness = thickness;
 
+        if (BackgroundEllipse != null)
+        {
+            BackgroundEllipse.Width = diameter;
+            BackgroundEllipse.Height = diameter;
+        }
+
+        ArcPath.Stroke = Accent;
         ArcPath.StrokeThickness = thickness;
-        ArcPath.Stroke = IsActive ? Accent : new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
 
         double animatedPercent = IsActive ? (double)GetValue(AnimatedPercentProperty) : 0;
         ArcPath.Data = BuildArcGeometry(center, radius, animatedPercent);
 
-        PercentText.Text = StatusText;
-        PercentText.FontSize = Math.Max(11, diameter * 0.21);
-        PercentText.Foreground = IsActive ? Accent : new SolidColorBrush(Color.FromRgb(0x8A, 0x8A, 0x8A));
+        if (ShowIconInCenter && (CenterImageSource != null || CenterIcon != null))
+        {
+            if (CenterImageSource != null)
+            {
+                if (CenterImageRect != null && CenterImageBrush != null)
+                {
+                    CenterImageBrush.ImageSource = CenterImageSource;
+                    CenterImageRect.Visibility = Visibility.Visible;
+                }
+                if (CenterIconPath != null)
+                    CenterIconPath.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                if (CenterImageRect != null)
+                    CenterImageRect.Visibility = Visibility.Collapsed;
+                if (CenterIconPath != null)
+                {
+                    CenterIconPath.Data = CenterIcon;
+                    CenterIconPath.Visibility = Visibility.Visible;
+                }
+            }
 
-        LabelText.Text = DisplayLabel;
-        LabelText.FontSize = Math.Max(8.0, diameter * 0.11);
-        LabelText.Visibility = string.IsNullOrEmpty(DisplayLabel) ? Visibility.Collapsed : Visibility.Visible;
+            if (CenterTextPanel != null)
+                CenterTextPanel.Visibility = Visibility.Collapsed;
+            if (BottomPercentText != null)
+            {
+                BottomPercentText.Text = StatusText;
+                BottomPercentText.Visibility = Visibility.Visible;
+            }
+        }
+        else
+        {
+            if (CenterImageRect != null)
+                CenterImageRect.Visibility = Visibility.Collapsed;
+            if (CenterIconPath != null)
+                CenterIconPath.Visibility = Visibility.Collapsed;
+            if (CenterTextPanel != null)
+                CenterTextPanel.Visibility = Visibility.Visible;
+            if (BottomPercentText != null)
+                BottomPercentText.Visibility = Visibility.Collapsed;
 
-        SubLabelText.Text = SubText;
-        SubLabelText.FontSize = Math.Max(7.0, diameter * 0.09);
-        SubLabelText.Visibility = string.IsNullOrEmpty(SubText) ? Visibility.Collapsed : Visibility.Visible;
+            PercentText.Text = StatusText;
+            PercentText.FontSize = Math.Max(12, diameter * 0.28);
+            PercentText.Foreground = Brushes.White;
+        }
+
     }
 
     /// <summary>Plays a smooth, cinematic sweep fill animation from 0 to target Percent.</summary>

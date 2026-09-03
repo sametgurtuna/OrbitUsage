@@ -44,11 +44,12 @@ public class LocalApiService : IAsyncDisposable
 
             _cts = new CancellationTokenSource();
             _listenTask = Task.Run(() => ListenLoopAsync(_cts.Token));
+            Serilog.Log.Information("[LocalApiService] HTTP server listening on http://127.0.0.1:{Port}/", port);
         }
         catch (Exception ex)
         {
             // Port might be in use or restricted; log and keep application alive
-            System.Diagnostics.Debug.WriteLine($"[LocalApiService] Failed to start HTTP listener: {ex.Message}");
+            Serilog.Log.Error(ex, "[LocalApiService] Failed to start HTTP listener on port {Port}", Port);
             _listener = null;
         }
     }
@@ -221,11 +222,41 @@ public class LocalApiService : IAsyncDisposable
         await WriteJsonAsync(res, payload);
     }
 
+    public async Task RestartAsync(bool enabled, int port)
+    {
+        await StopAsync();
+        if (enabled)
+        {
+            try
+            {
+                int p = port > 0 ? port : 18923;
+                _listener = new HttpListener();
+                _listener.Prefixes.Add($"http://127.0.0.1:{p}/");
+                _listener.Start();
+
+                _cts = new CancellationTokenSource();
+                _listenTask = Task.Run(() => ListenLoopAsync(_cts.Token));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LocalApiService] Failed to restart HTTP listener: {ex.Message}");
+                _listener = null;
+            }
+        }
+    }
+
     private async Task HandleRefreshAsync(HttpListenerResponse res)
     {
         if (_scraper != null)
         {
-            _ = Task.Run(async () => await _scraper.RefreshNowAsync());
+            if (System.Windows.Application.Current?.Dispatcher != null)
+            {
+                _ = System.Windows.Application.Current.Dispatcher.InvokeAsync(async () => await _scraper.RefreshNowAsync());
+            }
+            else
+            {
+                _ = _scraper.RefreshNowAsync();
+            }
         }
 
         await WriteJsonAsync(res, new
@@ -240,7 +271,7 @@ public class LocalApiService : IAsyncDisposable
         await WriteJsonAsync(res, new
         {
             app = "Orbit",
-            version = "1.0.0",
+            version = "1.3.0",
             aggregateStatus = _viewModel.AggregateStatus.ToString(),
             serviceCount = _viewModel.Services.Count,
             isRefreshing = _viewModel.IsRefreshing

@@ -1,68 +1,177 @@
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using Orbit.Controls;
 using Orbit.Helpers;
 using Orbit.Models;
 using Orbit.Services;
 using Orbit.ViewModels;
+using Point = System.Windows.Point;
 using Size = System.Windows.Size;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
 namespace Orbit.Views;
 
 public partial class MainWindow : Window
 {
     private const int WS_EX_TOOLWINDOW = 0x00000080;
+    private const int WS_EX_APPWINDOW = 0x00040000;
     private const int GWL_EXSTYLE = -20;
-
-    // Collapsed/expanded footprints per layout. The window itself is sized once (per layout, see
-    // ScreenPositionHelper) and never animated; only NotchBorder's Width/Height animate inside it,
-    // growing away from the anchored screen edge because of NotchBorder's alignment.
-    private static readonly Size TopCenterCollapsed = new(140, 28);
-    private static readonly Size TopCenterExpanded = new(330, 170);
-    private static readonly Size RightCenterCollapsed = new(28, 140);
-    private static readonly Size RightCenterExpanded = new(170, 360);
-
-    // Multiplies every ms constant in BuildStoryboard, keeping the fade/resize choreography's
-    // relative proportions identical at every speed. Normal == the app's original timings.
-    private static readonly Dictionary<NotchAnimationSpeed, double> SpeedScale = new()
-    {
-        [NotchAnimationSpeed.Fast] = 0.65,
-        [NotchAnimationSpeed.Normal] = 1.0,
-        [NotchAnimationSpeed.Fluid] = 1.5,
-    };
 
     private readonly NotchViewModel _viewModel;
     private readonly SettingsService? _settingsService;
-    private NotchLayout _layout = NotchLayout.TopCenter;
-    private Storyboard _expandStoryboard = new();
-    private Storyboard _collapseStoryboard = new();
+    private readonly Func<SettingsWindow>? _settingsWindowFactory;
+    private SettingsWindow? _openSettingsWindow;
+    private NotchLayout _layout = NotchLayout.RightCenter;
+
+    private DispatcherTimer? _flyoutCloseTimer;
+    private DispatcherTimer? _dockAutoHideTimer;
+    private bool _isDockSlidOut = false;
+    private bool _isDockPinned = true;
 
     public MainWindow() : this(new NotchViewModel())
     {
     }
 
-    public MainWindow(NotchViewModel viewModel, SettingsService? settingsService = null)
+    public MainWindow(NotchViewModel viewModel, SettingsService? settingsService = null, Func<SettingsWindow>? settingsWindowFactory = null)
     {
         InitializeComponent();
 
         _viewModel = viewModel;
         _settingsService = settingsService;
+        _settingsWindowFactory = settingsWindowFactory;
         DataContext = _viewModel;
-        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+
+        Owner = App.GetAltTabSuppressor();
+
+        _dockAutoHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
+        _dockAutoHideTimer.Tick += (s, e) =>
+        {
+            _dockAutoHideTimer.Stop();
+            if (!_isDockPinned && !IsMouseOverDockOrFlyout())
+            {
+                SlideDockOut();
+            }
+        };
 
         SourceInitialized += MainWindow_SourceInitialized;
+        IsVisibleChanged += (s, e) => EnsureAltTabHidden();
+        Activated += (s, e) => EnsureAltTabHidden();
     }
 
     private void MainWindow_SourceInitialized(object? sender, EventArgs e)
     {
-        // Hide from Alt-Tab (ShowInTaskbar=False alone doesn't guarantee this for tool-style windows).
+        EnsureAltTabHidden();
+
         var hwnd = new WindowInteropHelper(this).Handle;
-        int exStyle = NativeMethods.GetWindowLong(hwnd, GWL_EXSTYLE);
-        NativeMethods.SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
+        var source = HwndSource.FromHwnd(hwnd);
+        source?.AddHook(WndProc);
+
+        if (_settingsService?.Current != null)
+        {
+            HotkeyManager.Register(hwnd, _settingsService.Current);
+        }
+
+        Closed += (s, ev) => HotkeyManager.Unregister(hwnd);
 
         ApplyLayoutCore();
+    }
+
+    public void EnsureAltTabHidden()
+    {
+        try
+        {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (hwnd != IntPtr.Zero)
+            {
+                NativeMethods.MakeToolWindow(hwnd);
+            }
+        }
+        catch { }
+    }
+
+    public void Expand()
+    {
+        _viewModel.IsExpanded = true;
+        Visibility = Visibility.Visible;
+        Activate();
+        SlideDockIn();
+    }
+
+    public void Collapse()
+    {
+        _viewModel.IsExpanded = false;
+        HideFlyout();
+        SlideDockOut();
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == NativeMethods.WM_HOTKEY && ((int)wParam == HotkeyManager.HotkeyId || (int)wParam == HotkeyManager.HotkeyIdAltOnly))
+        {
+            ToggleDock();
+            handled = true;
+            return IntPtr.Zero;
+        }
+
+        if (msg == NativeMethods.WM_NCHITTEST)
+        {
+            int x = (short)(lParam.ToInt64() & 0xFFFF);
+            int y = (short)((lParam.ToInt64() >> 16) & 0xFFFF);
+            var screenPt = new Point(x, y);
+
+            try
+            {
+                if (_layout == NotchLayout.RightCenter)
+                {
+                    if (RightDockContainer != null && RightDockContainer.IsVisible)
+                    {
+                        var dockPt = RightDockContainer.PointFromScreen(screenPt);
+                        var dockBounds = new Rect(0, 0, RightDockContainer.ActualWidth, RightDockContainer.ActualHeight);
+                        if (dockBounds.Contains(dockPt))
+                        {
+                            return IntPtr.Zero;
+                        }
+                    }
+
+                    if (FlyoutCard != null && FlyoutCard.IsVisible && FlyoutCard.Opacity > 0.05)
+                    {
+                        var cardPt = FlyoutCard.PointFromScreen(screenPt);
+                        var cardBounds = new Rect(0, 0, FlyoutCard.ActualWidth, FlyoutCard.ActualHeight);
+                        if (cardBounds.Contains(cardPt))
+                        {
+                            return IntPtr.Zero;
+                        }
+                    }
+
+                    // Everywhere else is click-through
+                    handled = true;
+                    return (IntPtr)NativeMethods.HTTRANSPARENT;
+                }
+                else
+                {
+                    if (TopCenterDockBorder != null && TopCenterDockBorder.IsVisible)
+                    {
+                        var borderPt = TopCenterDockBorder.PointFromScreen(screenPt);
+                        var bounds = new Rect(0, 0, TopCenterDockBorder.ActualWidth, TopCenterDockBorder.ActualHeight);
+                        if (!bounds.Contains(borderPt))
+                        {
+                            handled = true;
+                            return (IntPtr)NativeMethods.HTTRANSPARENT;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Visual transformation not ready
+            }
+        }
+        return IntPtr.Zero;
     }
 
     public void ApplyLayout(NotchLayout layout, string? targetMonitorDeviceName = null)
@@ -71,179 +180,311 @@ public partial class MainWindow : Window
         ApplyLayoutCore(targetMonitorOverride: targetMonitorDeviceName);
     }
 
-    /// <summary>Live-previews a layout/monitor/offset/speed combination before it is saved (Settings window
-    /// calls this as the user changes settings), without touching the persisted settings.</summary>
     public void PreviewSettings(NotchLayout layout, string? targetMonitorDeviceName, double offsetX, double offsetY, NotchAnimationSpeed speed)
     {
         _layout = layout;
-        ApplyLayoutCore(targetMonitorOverride: targetMonitorDeviceName, offsetXOverride: offsetX, offsetYOverride: offsetY, speedOverride: speed);
+        ApplyLayoutCore(targetMonitorOverride: targetMonitorDeviceName, offsetXOverride: offsetX, offsetYOverride: offsetY);
     }
 
-    private void ApplyLayoutCore(string? targetMonitorOverride = null, double? offsetXOverride = null, double? offsetYOverride = null, NotchAnimationSpeed? speedOverride = null)
+    public void PreviewSettings(double? offsetX = null, double? offsetY = null)
     {
+        ApplyLayoutCore(offsetXOverride: offsetX, offsetYOverride: offsetY);
+    }
+
+    public void RefreshHotkeysAndTopmost()
+    {
+        var settings = _settingsService?.Current;
+        Topmost = settings?.AlwaysOnTop ?? true;
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd != IntPtr.Zero && settings != null)
+        {
+            HotkeyManager.Register(hwnd, settings);
+        }
+    }
+
+    private void ApplyLayoutCore(string? targetMonitorOverride = null, double? offsetXOverride = null, double? offsetYOverride = null)
+    {
+        var settings = _settingsService?.Current;
+        Topmost = settings?.AlwaysOnTop ?? true;
+
         bool vertical = _layout == NotchLayout.RightCenter;
 
-        CollapsedHorizontalPanel.Visibility = vertical ? Visibility.Collapsed : Visibility.Visible;
-        CollapsedVerticalPanel.Visibility = vertical ? Visibility.Visible : Visibility.Collapsed;
-        ExpandedHorizontalPanel.Visibility = vertical ? Visibility.Collapsed : Visibility.Visible;
-        ExpandedVerticalPanel.Visibility = vertical ? Visibility.Visible : Visibility.Collapsed;
+        RightDockPanel.Visibility = vertical ? Visibility.Visible : Visibility.Collapsed;
+        TopCenterDockBorder.Visibility = vertical ? Visibility.Collapsed : Visibility.Visible;
 
-        NotchBorder.HorizontalAlignment = vertical ? System.Windows.HorizontalAlignment.Right : System.Windows.HorizontalAlignment.Center;
-        NotchBorder.VerticalAlignment = vertical ? System.Windows.VerticalAlignment.Center : System.Windows.VerticalAlignment.Top;
-        NotchBorder.CornerRadius = vertical ? new CornerRadius(16, 0, 0, 16) : new CornerRadius(0, 0, 16, 16);
-
-        var collapsed = vertical ? RightCenterCollapsed : TopCenterCollapsed;
-        var expanded = vertical ? RightCenterExpanded : TopCenterExpanded;
-
-        // Snap to the collapsed footprint immediately (no animation) so switching layouts doesn't
-        // leave stale dimensions from the previous layout on screen for a frame.
-        NotchBorder.Width = collapsed.Width;
-        NotchBorder.Height = collapsed.Height;
-
-        var settings = _settingsService?.Current;
-        var speed = speedOverride ?? settings?.AnimationSpeed ?? NotchAnimationSpeed.Normal;
-        double scale = SpeedScale[speed];
-        _expandStoryboard = BuildStoryboard(collapsed, expanded, expanding: true, scale);
-        _collapseStoryboard = BuildStoryboard(collapsed, expanded, expanding: false, scale);
-
-        // Before SourceInitialized there's no HwndSource yet, so DPI lookup falls back to 1.0 inside
-        // ScreenPositionHelper (harmless - SourceInitialized re-invokes this with the real scale).
         string? targetMonitor = targetMonitorOverride ?? settings?.TargetMonitorDeviceName;
         double offsetX = offsetXOverride ?? settings?.NotchOffsetX ?? 0;
         double offsetY = offsetYOverride ?? settings?.NotchOffsetY ?? 0;
         ScreenPositionHelper.Position(this, _layout, targetMonitor, offsetX, offsetY);
     }
 
-    private static Storyboard BuildStoryboard(Size collapsed, Size expanded, bool expanding, double speedScale)
+    // =========================================================================
+    // Dock Slide & Edge Hover Animations
+    // =========================================================================
+
+    public void ToggleDock()
     {
-        var ease = new CubicEase { EasingMode = expanding ? EasingMode.EaseOut : EasingMode.EaseInOut };
-        var target = expanding ? expanded : collapsed;
-        var storyboard = new Storyboard();
+        if (_layout != NotchLayout.RightCenter)
+        {
+            Visibility = Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            return;
+        }
 
-        TimeSpan Ms(double baseMs) => TimeSpan.FromMilliseconds(baseMs * speedScale);
+        if (Visibility != Visibility.Visible)
+        {
+            Visibility = Visibility.Visible;
+            Topmost = true;
+            _isDockPinned = true;
+            SlideDockIn();
+            return;
+        }
 
-        var widthAnim = new DoubleAnimation { To = target.Width, Duration = Ms(expanding ? 260 : 180), EasingFunction = ease };
-        Storyboard.SetTargetName(widthAnim, "NotchBorder");
-        Storyboard.SetTargetProperty(widthAnim, new PropertyPath(FrameworkElement.WidthProperty));
-        storyboard.Children.Add(widthAnim);
-
-        var heightAnim = new DoubleAnimation { To = target.Height, Duration = Ms(expanding ? 260 : 180), EasingFunction = ease };
-        Storyboard.SetTargetName(heightAnim, "NotchBorder");
-        Storyboard.SetTargetProperty(heightAnim, new PropertyPath(FrameworkElement.HeightProperty));
-        storyboard.Children.Add(heightAnim);
-
-        var (fadeInName, fadeOutName, fadeInDelayMs, fadeInDurationMs) = expanding
-            ? ("ExpandedContent", "CollapsedContent", 60, 200)
-            : ("CollapsedContent", "ExpandedContent", 60, 120);
-
-        var fadeIn = new DoubleAnimation { To = 1, BeginTime = Ms(fadeInDelayMs), Duration = Ms(fadeInDurationMs), EasingFunction = ease };
-        Storyboard.SetTargetName(fadeIn, fadeInName);
-        Storyboard.SetTargetProperty(fadeIn, new PropertyPath(UIElement.OpacityProperty));
-        storyboard.Children.Add(fadeIn);
-
-        var fadeOut = new DoubleAnimation { To = 0, Duration = Ms(60) };
-        Storyboard.SetTargetName(fadeOut, fadeOutName);
-        Storyboard.SetTargetProperty(fadeOut, new PropertyPath(UIElement.OpacityProperty));
-        storyboard.Children.Add(fadeOut);
-
-        var showFrames = new ObjectAnimationUsingKeyFrames();
-        showFrames.KeyFrames.Add(new DiscreteObjectKeyFrame(Visibility.Visible, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        Storyboard.SetTargetName(showFrames, fadeInName);
-        Storyboard.SetTargetProperty(showFrames, new PropertyPath(UIElement.VisibilityProperty));
-        storyboard.Children.Add(showFrames);
-
-        var hideFrames = new ObjectAnimationUsingKeyFrames();
-        hideFrames.KeyFrames.Add(new DiscreteObjectKeyFrame(Visibility.Collapsed,
-            KeyTime.FromTimeSpan(expanding ? Ms(fadeInDelayMs) : Ms(180))));
-        Storyboard.SetTargetName(hideFrames, fadeOutName);
-        Storyboard.SetTargetProperty(hideFrames, new PropertyPath(UIElement.VisibilityProperty));
-        storyboard.Children.Add(hideFrames);
-
-        return storyboard;
-    }
-
-    private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(NotchViewModel.AggregateStatus))
-            UpdateAggregateDot();
-        else if (e.PropertyName == nameof(NotchViewModel.IsRefreshing))
-            UpdateRefreshAnimation();
-    }
-
-    private void UpdateAggregateDot()
-    {
-        var brush = StatusBrush(_viewModel.AggregateStatus);
-        AggregateStatusDotH.Fill = brush;
-        AggregateStatusDotV.Fill = brush;
-    }
-
-    private static System.Windows.Media.Brush StatusBrush(UsageStatus status) => status switch
-    {
-        UsageStatus.Critical => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE5, 0x4B, 0x4B)),
-        UsageStatus.Warning => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF2, 0xB8, 0x3D)),
-        UsageStatus.Unavailable => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x8A, 0x8A, 0x8A)),
-        _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3D, 0xDC, 0x84)),
-    };
-
-    private void UpdateRefreshAnimation()
-    {
-        var pulse = (Storyboard)Resources["RefreshPulseStoryboard"];
-        if (_viewModel.IsRefreshing)
-            pulse.Begin(this, true);
+        if (_isDockSlidOut)
+        {
+            _isDockPinned = true;
+            Topmost = true;
+            Activate();
+            SlideDockIn();
+        }
         else
-            pulse.Stop(this);
-    }
-
-    public void Expand()
-    {
-        if (_viewModel.IsExpanded) return;
-        _viewModel.IsExpanded = true;
-        _expandStoryboard.Begin(this);
-        TriggerGaugeAnimations();
-    }
-
-    public void Collapse()
-    {
-        if (!_viewModel.IsExpanded) return;
-        _viewModel.IsExpanded = false;
-        _collapseStoryboard.Begin(this);
-    }
-
-    private void TriggerGaugeAnimations()
-    {
-        var targetPanel = _layout == NotchLayout.RightCenter ? ExpandedVerticalPanel : ExpandedHorizontalPanel;
-        var gauges = FindVisualChildren<RadialGauge>(targetPanel).ToList();
-        for (int i = 0; i < gauges.Count; i++)
         {
-            gauges[i].AnimateFill(delayMs: 60 + (i * 70));
+            _isDockPinned = false;
+            HideFlyout();
+            SlideDockOut();
         }
     }
 
-    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject? depObj) where T : DependencyObject
+    public void SlideDockIn()
     {
-        if (depObj == null) yield break;
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+        _isDockSlidOut = false;
+        _dockAutoHideTimer?.Stop();
+        double scale = GetAnimationSpeedScale();
+        var anim = new DoubleAnimation
         {
-            var child = VisualTreeHelper.GetChild(depObj, i);
-            if (child is T t)
-                yield return t;
+            To = 0.0,
+            Duration = TimeSpan.FromMilliseconds(240 * scale),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        RightDockTranslate?.BeginAnimation(TranslateTransform.XProperty, anim);
+    }
 
-            foreach (var childOfChild in FindVisualChildren<T>(child))
-                yield return childOfChild;
+    public void SlideDockOut()
+    {
+        _isDockSlidOut = true;
+        HideFlyout();
+        double scale = GetAnimationSpeedScale();
+        // Leaves 14px sleek tab peeking at the screen edge (width 68 - 54 = 14)
+        var anim = new DoubleAnimation
+        {
+            To = 54.0,
+            Duration = TimeSpan.FromMilliseconds(220 * scale),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        RightDockTranslate?.BeginAnimation(TranslateTransform.XProperty, anim);
+    }
+
+    private bool IsMouseOverDockOrFlyout()
+    {
+        return (RightDockContainer != null && RightDockContainer.IsMouseOver) ||
+               (FlyoutCard != null && FlyoutCard.IsMouseOver);
+    }
+
+    private void RightDockContainer_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _dockAutoHideTimer?.Stop();
+        if (_isDockSlidOut)
+        {
+            SlideDockIn();
         }
     }
 
-    // HoverZone (the whole fixed-size window, see MainWindow.xaml) owns these - expand the instant
-    // the pointer enters it, collapse the instant it leaves. No debounce/grace timer: HoverZone's
-    // bounds never animate, so there's no flicker risk from mid-animation hit-test churn.
-    private void NotchBorder_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e) => Expand();
-
-    private void NotchBorder_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e) => Collapse();
-
-    private void NotchBorder_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void RightDockContainer_MouseLeave(object sender, MouseEventArgs e)
     {
-        if (!_viewModel.IsExpanded) Expand();
+        if (!_isDockPinned)
+        {
+            _dockAutoHideTimer?.Stop();
+            _dockAutoHideTimer?.Start();
+        }
     }
 
-    private void RefreshButton_Click(object sender, RoutedEventArgs e) => _viewModel.RefreshCommand.Execute(null);
+    // =========================================================================
+    // Hover & Flyout Interactive Positioning
+    // =========================================================================
+
+    private void ServiceItem_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _flyoutCloseTimer?.Stop();
+        _dockAutoHideTimer?.Stop();
+
+        if (sender is FrameworkElement fe && fe.DataContext is ServiceUsageViewModel vm)
+        {
+            _viewModel.HoveredService = vm;
+
+            try
+            {
+                // Ensure card layout is measured
+                if (FlyoutCard.ActualHeight == 0)
+                {
+                    FlyoutCard.Measure(new Size(320, 400));
+                    FlyoutCard.Arrange(new Rect(0, 0, FlyoutCard.DesiredSize.Width, FlyoutCard.DesiredSize.Height));
+                }
+
+                // Gauge circle is 44px diameter at the top of the item Grid
+                var itemPos = fe.TransformToAncestor(this).Transform(new Point(0, 0));
+                double gaugeCenterY = itemPos.Y + 22.0;
+                double cardHeight = FlyoutCard.ActualHeight > 0 ? FlyoutCard.ActualHeight : 185.0;
+                double targetY = gaugeCenterY - (cardHeight / 2.0);
+
+                // Clamp within window bounds
+                targetY = Math.Clamp(targetY, 15, Math.Max(15, ActualHeight - cardHeight - 15));
+
+                double scale = GetAnimationSpeedScale();
+                var yAnim = new DoubleAnimation
+                {
+                    To = targetY,
+                    Duration = TimeSpan.FromMilliseconds(160 * scale),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
+                FlyoutTranslateY.BeginAnimation(TranslateTransform.YProperty, yAnim);
+            }
+            catch
+            {
+                // Fallback position
+            }
+
+            ShowFlyout();
+        }
+    }
+
+    private void ServiceItem_MouseLeave(object sender, MouseEventArgs e)
+    {
+        ScheduleHideFlyout();
+    }
+
+    private void FlyoutCard_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _flyoutCloseTimer?.Stop();
+        _dockAutoHideTimer?.Stop();
+    }
+
+    private void FlyoutCard_MouseLeave(object sender, MouseEventArgs e)
+    {
+        ScheduleHideFlyout();
+        if (!_isDockPinned)
+        {
+            _dockAutoHideTimer?.Stop();
+            _dockAutoHideTimer?.Start();
+        }
+    }
+
+    private void ScheduleHideFlyout()
+    {
+        _flyoutCloseTimer?.Stop();
+        _flyoutCloseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
+        _flyoutCloseTimer.Tick += (s, e) =>
+        {
+            _flyoutCloseTimer.Stop();
+            HideFlyout();
+        };
+        _flyoutCloseTimer.Start();
+    }
+
+    private double GetAnimationSpeedScale()
+    {
+        var speed = _settingsService?.Current.AnimationSpeed ?? NotchAnimationSpeed.Normal;
+        return speed switch
+        {
+            NotchAnimationSpeed.Fast => 0.6,
+            NotchAnimationSpeed.Fluid => 1.6,
+            _ => 1.0
+        };
+    }
+
+    private void ShowFlyout()
+    {
+        double scale = GetAnimationSpeedScale();
+        var opacityAnim = new DoubleAnimation
+        {
+            To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(160 * scale),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        var slideAnim = new DoubleAnimation
+        {
+            From = -14.0,
+            To = 0.0,
+            Duration = TimeSpan.FromMilliseconds(180 * scale),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        FlyoutCard.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+        FlyoutTranslateX.BeginAnimation(TranslateTransform.XProperty, slideAnim);
+    }
+
+    private void HideFlyout()
+    {
+        double scale = GetAnimationSpeedScale();
+        var opacityAnim = new DoubleAnimation
+        {
+            To = 0.0,
+            Duration = TimeSpan.FromMilliseconds(130 * scale),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        var slideAnim = new DoubleAnimation
+        {
+            To = -10.0,
+            Duration = TimeSpan.FromMilliseconds(130 * scale),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        FlyoutCard.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+        FlyoutTranslateX.BeginAnimation(TranslateTransform.XProperty, slideAnim);
+    }
+
+    private void ServiceItem_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServiceUsageViewModel vm)
+        {
+            if (vm.HasSessionGauge)
+            {
+                vm.ToggleQuotaMode();
+            }
+            e.Handled = true;
+        }
+    }
+
+    private void TopNotch_MouseEnter(object sender, MouseEventArgs e)
+    {
+    }
+
+    private void TopNotch_MouseLeave(object sender, MouseEventArgs e)
+    {
+    }
+
+    // =========================================================================
+    // Menu Actions
+    // =========================================================================
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_settingsWindowFactory == null) return;
+        if (_openSettingsWindow != null)
+        {
+            _openSettingsWindow.Activate();
+            return;
+        }
+
+        _openSettingsWindow = _settingsWindowFactory();
+        _openSettingsWindow.Closed += (_, _) => _openSettingsWindow = null;
+        _openSettingsWindow.Show();
+        _openSettingsWindow.Activate();
+    }
+
+    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.RefreshCommand.Execute(null);
+    }
+
+    private void ExitButton_Click(object sender, RoutedEventArgs e)
+    {
+        System.Windows.Application.Current.Shutdown();
+    }
 }

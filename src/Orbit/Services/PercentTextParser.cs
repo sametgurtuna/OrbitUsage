@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Orbit.Services;
 
@@ -13,11 +14,15 @@ internal static class PercentTextParser
     {
         try
         {
-            var match = Regex.Match(text, string.IsNullOrWhiteSpace(pattern) ? @"(\d{1,3})\s*%" : pattern);
-            if (match.Success && match.Groups.Count > 1 && double.TryParse(match.Groups[1].Value, out var value))
+            var match = Regex.Match(text, string.IsNullOrWhiteSpace(pattern) ? @"(\d{1,3}(?:[.,]\d+)?)\s*%" : pattern);
+            if (match.Success && match.Groups.Count > 1)
             {
-                if (invert) value = 100 - value;
-                return Math.Clamp(value, 0, 100);
+                string raw = match.Groups[1].Value.Replace(',', '.');
+                if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+                {
+                    if (invert) value = 100 - value;
+                    return Math.Clamp(value, 0, 100);
+                }
             }
         }
         catch (RegexParseException)

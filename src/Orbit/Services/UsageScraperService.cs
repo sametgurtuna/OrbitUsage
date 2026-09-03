@@ -1,4 +1,4 @@
-﻿using System.Windows.Threading;
+using System.Windows.Threading;
 using Orbit.Models;
 
 namespace Orbit.Services;
@@ -51,6 +51,12 @@ public class UsageScraperService
 
     public async Task RefreshNowAsync(string? onlyServiceKey = null)
     {
+        if (System.Windows.Application.Current != null && !System.Windows.Application.Current.Dispatcher.CheckAccess())
+        {
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () => await RefreshNowAsync(onlyServiceKey));
+            return;
+        }
+
         if (_refreshInFlight) return;
         _refreshInFlight = true;
         RefreshingChanged?.Invoke(true);
@@ -98,43 +104,77 @@ public class UsageScraperService
         try
         {
             Microsoft.Web.WebView2.Core.CoreWebView2? webView = null;
+            bool sessionAcquired = false;
+
             if (provider.RequiresSharedWebView)
             {
+                if (_session.IsInteractiveSessionActive)
+                {
+                    serviceSettings.LastError = "Sign-in in progress, scrape skipped";
+                    return UsageResult.Fail(serviceSettings.LastError);
+                }
+
+                sessionAcquired = await _session.TryAcquireSessionAsync();
+                if (!sessionAcquired)
+                {
+                    serviceSettings.LastError = "WebView session is currently busy";
+                    return UsageResult.Fail(serviceSettings.LastError);
+                }
+
                 var initialized = await _session.InitializeAsync();
                 if (!initialized)
                 {
+                    _session.ReleaseSession();
                     serviceSettings.LastError = "WebView2 Runtime not available - switch this service to manual mode or install the runtime";
                     return UsageResult.Fail(serviceSettings.LastError);
                 }
                 webView = _session.SharedWebView.CoreWebView2;
             }
 
-            selectors.Services.TryGetValue(provider.ServiceKey, out var config);
-            config ??= new ServiceSelectorConfig();
-
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
-            var result = await provider.GetUsageAsync(webView, config, cts.Token);
-
-            if (result.Success)
+            try
             {
-                serviceSettings.LastKnownPercent = result.PercentUsed;
-                serviceSettings.LastKnownResetText = result.ResetTimeText;
-                serviceSettings.LastUpdatedUtc = DateTime.UtcNow;
-                serviceSettings.LastError = null;
-            }
-            else if (!result.NotImplemented)
-            {
-                // Keep LastKnownPercent as-is - show stale data rather than nothing.
-                serviceSettings.LastError = result.ErrorMessage;
-            }
+                selectors.Services.TryGetValue(provider.ServiceKey, out var config);
+                config ??= new ServiceSelectorConfig();
 
-            return result;
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+                var result = await provider.GetUsageAsync(webView, config, cts.Token);
+
+                if (result.Success)
+                {
+                    serviceSettings.LastKnownPercent = result.PercentUsed;
+                    serviceSettings.LastKnownResetText = result.ResetTimeText;
+                    serviceSettings.LastUpdatedUtc = DateTime.UtcNow;
+                    serviceSettings.LastError = null;
+                    if (result.HasSessionData)
+                    {
+                        serviceSettings.LastKnownSessionPercent = result.SessionPercentUsed;
+                        serviceSettings.LastKnownSessionResetText = result.SessionResetTimeText;
+                    }
+                    Serilog.Log.Information("[UsageScraper] {Service} refreshed: {Percent}% (Reset: {Reset})", provider.ServiceKey, result.PercentUsed, result.ResetTimeText ?? "none");
+                }
+                else if (!result.NotImplemented)
+                {
+                    // Keep LastKnownPercent as-is - show stale data rather than nothing.
+                    serviceSettings.LastError = result.ErrorMessage;
+                    Serilog.Log.Warning("[UsageScraper] {Service} refresh failed: {Error}", provider.ServiceKey, result.ErrorMessage);
+                }
+
+                return result;
+            }
+            finally
+            {
+                if (sessionAcquired)
+                {
+                    _session.ReleaseSession();
+                }
+            }
         }
         catch (Exception ex)
         {
             // Belt-and-suspenders: providers are documented to never throw, but a scrape must
             // never be able to bring down the polling loop regardless.
             serviceSettings.LastError = $"Unexpected error: {ex.Message}";
+            Serilog.Log.Error(ex, "[UsageScraper] Unexpected error scraping {Service}", provider.ServiceKey);
             return UsageResult.Fail(serviceSettings.LastError);
         }
     }

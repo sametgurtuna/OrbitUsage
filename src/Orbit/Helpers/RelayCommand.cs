@@ -1,8 +1,7 @@
-﻿using System.Windows.Input;
+using System.Windows.Input;
 
 namespace Orbit.Helpers;
 
-/// <summary>Minimal ICommand implementation - no need to pull in a full MVVM framework for this app.</summary>
 public class RelayCommand : ICommand
 {
     private readonly Action _execute;
@@ -14,9 +13,27 @@ public class RelayCommand : ICommand
         _canExecute = canExecute;
     }
 
-    public bool CanExecute(object? parameter) => _canExecute?.Invoke() ?? true;
+    public event EventHandler? CanExecuteChanged
+    {
+        add => CommandManager.RequerySuggested += value;
+        remove => CommandManager.RequerySuggested -= value;
+    }
+
+    public bool CanExecute(object? parameter) => _canExecute == null || _canExecute();
 
     public void Execute(object? parameter) => _execute();
+}
+
+public class RelayCommand<T> : ICommand
+{
+    private readonly Action<T?> _execute;
+    private readonly Predicate<T?>? _canExecute;
+
+    public RelayCommand(Action<T?> execute, Predicate<T?>? canExecute = null)
+    {
+        _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+        _canExecute = canExecute;
+    }
 
     public event EventHandler? CanExecuteChanged
     {
@@ -24,5 +41,12 @@ public class RelayCommand : ICommand
         remove => CommandManager.RequerySuggested -= value;
     }
 
-    public void RaiseCanExecuteChanged() => CommandManager.InvalidateRequerySuggested();
+    public bool CanExecute(object? parameter)
+    {
+        if (_canExecute == null) return true;
+        if (parameter == null && typeof(T).IsValueType) return false;
+        return _canExecute((T?)parameter);
+    }
+
+    public void Execute(object? parameter) => _execute((T?)parameter);
 }

@@ -1,0 +1,108 @@
+<svg width="960" height="300" viewBox="0 0 960 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#12141F" />
+      <stop offset="60%" stop-color="#090A0F" />
+      <stop offset="100%" stop-color="#050608" />
+    </radialGradient>
+    <radialGradient id="cyanGlow" cx="20%" cy="40%" r="45%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="purpleGlow" cx="75%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="orbitTextGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#A5B4FC" />
+    </linearGradient>
+    <linearGradient id="ringCyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <linearGradient id="ringPurple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#C084FC" />
+      <stop offset="100%" stop-color="#8B5CF6" />
+    </linearGradient>
+    <filter id="shadowGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#8B5CF6" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="960" height="300" rx="20" fill="url(#bgGrad)" />
+  <rect width="960" height="300" rx="20" fill="url(#cyanGlow)" />
+  <rect width="960" height="300" rx="20" fill="url(#purpleGlow)" />
+  <rect width="960" height="300" rx="20" stroke="#1E2230" stroke-width="1.5" />
+
+  <!-- Left: Branding & Core Value Proposition -->
+  <g transform="translate(64, 52)">
+    <!-- App Logo Icon -->
+    <g transform="translate(0, 0)">
+      <rect width="64" height="64" rx="16" fill="#141724" stroke="#2D3248" stroke-width="1.2" filter="url(#shadowGlow)" />
+      <!-- Orbital Rings Inside Logo -->
+      <circle cx="32" cy="32" r="22" stroke="url(#ringPurple)" stroke-width="2.5" stroke-dasharray="110 30" stroke-linecap="round" fill="none" opacity="0.9" />
+      <circle cx="32" cy="32" r="14" stroke="url(#ringCyan)" stroke-width="2.5" stroke-dasharray="70 20" stroke-linecap="round" fill="none" />
+      <circle cx="32" cy="32" r="5" fill="#38BDF8" />
+      <circle cx="48" cy="18" r="3" fill="#C084FC" />
+    </g>
+
+    <!-- Title and Badges -->
+    <g transform="translate(82, 10)">
+      <text x="0" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="34" font-weight="800" fill="url(#orbitTextGrad)" letter-spacing="0.5">ORBIT</text>
+      <rect x="135" y="4" width="62" height="24" rx="6" fill="#1E2238" stroke="#3B4263" stroke-width="1" />
+      <text x="166" y="20" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#A5B4FC" text-anchor="middle">v0.1.1</text>
+      
+      <rect x="205" y="4" width="86" height="24" rx="6" fill="#0C2538" stroke="#0284C7" stroke-width="1" />
+      <text x="248" y="20" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600" fill="#38BDF8" text-anchor="middle">WINDOWS</text>
+    </g>
+
+    <!-- Subtitle and Description -->
+    <text x="0" y="104" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="600" fill="#F1F5F9">
+      Minimalist Screen-Edge Quota Dock for LLM Subscriptions
+    </text>
+    <text x="0" y="130" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13.5" font-weight="400" fill="#94A3B8">
+      Real-time animated telemetry for Claude, Google Antigravity, and ChatGPT.
+    </text>
+    <text x="0" y="150" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13.5" font-weight="400" fill="#94A3B8">
+      Slides smoothly on hover or shortcut (Win + Alt + O). Zero setup needed.
+    </text>
+
+    <!-- Feature Pills -->
+    <g transform="translate(0, 172)">
+      <g transform="translate(0, 0)">
+        <rect width="138" height="28" rx="8" fill="#131622" stroke="#252A3D" stroke-width="1" />
+        <circle cx="14" cy="14" r="4" fill="#D97757" />
+        <text x="26" y="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="600" fill="#E2E8F0">Claude 3.7 &amp; Opus</text>
+      </g>
+      <g transform="translate(146, 0)">
+        <rect width="144" height="28" rx="8" fill="#131622" stroke="#252A3D" stroke-width="1" />
+        <circle cx="14" cy="14" r="4" fill="#38BDF8" />
+        <text x="26" y="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="600" fill="#E2E8F0">Google Antigravity</text>
+      </g>
+      <g transform="translate(298, 0)">
+        <rect width="132" height="28" rx="8" fill="#131622" stroke="#252A3D" stroke-width="1" />
+        <circle cx="14" cy="14" r="4" fill="#10B981" />
+        <text x="26" y="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="600" fill="#E2E8F0">REST API :18923</text>
+      </g>
+      <g transform="translate(438, 0)">
+        <rect width="130" height="28" rx="8" fill="#131622" stroke="#252A3D" stroke-width="1" />
+        <circle cx="14" cy="14" r="4" fill="#A855F7" />
+        <text x="26" y="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="600" fill="#E2E8F0">Win + Alt + O</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Right: Decorative Isometric Rings Simulation -->
+  <g transform="translate(730, 150)">
+    <circle cx="0" cy="0" r="100" stroke="#1E2336" stroke-width="1.5" fill="none" />
+    <circle cx="0" cy="0" r="74" stroke="#283049" stroke-width="2" stroke-dasharray="320 80" fill="none" opacity="0.6" />
+    <circle cx="0" cy="0" r="50" stroke="url(#ringCyan)" stroke-width="3" stroke-dasharray="210 60" fill="none" />
+    <circle cx="0" cy="0" r="28" stroke="url(#ringPurple)" stroke-width="3.5" stroke-dasharray="120 40" fill="none" />
+    <circle cx="0" cy="0" r="8" fill="#FFFFFF" filter="url(#shadowGlow)" />
+    <!-- Floating Orbit Dot -->
+    <circle cx="36" cy="-34" r="5" fill="#38BDF8" filter="url(#shadowGlow)" />
+  </g>
+</svg>

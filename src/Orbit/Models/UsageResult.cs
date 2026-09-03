@@ -1,4 +1,4 @@
-﻿namespace Orbit.Models;
+namespace Orbit.Models;
 
 /// <summary>
 /// Outcome of a single usage-fetch attempt for one service. Never thrown as an exception -
@@ -12,15 +12,25 @@ public class UsageResult
     public double PercentUsed { get; init; }
     public string? RawText { get; init; }
     public string? ResetTimeText { get; init; }
+    public double? SessionPercentUsed { get; init; }
+    public string? SessionResetTimeText { get; init; }
+    public bool HasSessionData => SessionPercentUsed.HasValue;
     public string? ErrorMessage { get; init; }
     public DateTime Timestamp { get; init; } = DateTime.UtcNow;
 
-    public static UsageResult Ok(double percentUsed, string? rawText = null, string? resetTimeText = null) => new()
+    public static UsageResult Ok(
+        double percentUsed,
+        string? rawText = null,
+        string? resetTimeText = null,
+        double? sessionPercentUsed = null,
+        string? sessionResetTimeText = null) => new()
     {
         Success = true,
         PercentUsed = percentUsed,
         RawText = rawText,
-        ResetTimeText = resetTimeText
+        ResetTimeText = resetTimeText,
+        SessionPercentUsed = sessionPercentUsed,
+        SessionResetTimeText = sessionResetTimeText
     };
 
     public static UsageResult Fail(string errorMessage) => new()

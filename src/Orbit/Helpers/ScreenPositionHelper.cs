@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Media;
 using Orbit.Models;
 
@@ -19,11 +19,11 @@ public class MonitorInfo
 /// </summary>
 public static class ScreenPositionHelper
 {
-    public const double TopCenterWindowWidth = 360;
-    public const double TopCenterWindowHeight = 190;
+    public const double TopCenterWindowWidth = 600;
+    public const double TopCenterWindowHeight = 320;
 
-    public const double RightCenterWindowWidth = 210;
-    public const double RightCenterWindowHeight = 380;
+    public const double RightCenterWindowWidth = 380;
+    public const double RightCenterWindowHeight = 520;
 
     public static List<MonitorInfo> GetMonitors()
     {
@@ -43,6 +43,39 @@ public static class ScreenPositionHelper
             });
         }
         return list;
+    }
+
+    public static (double Left, double Top, double Width, double Height) CalculateWindowBounds(
+        NotchLayout layout,
+        double workAreaLeft,
+        double workAreaTop,
+        double workAreaWidth,
+        double workAreaHeight,
+        double dpiScale = 1.0,
+        double offsetX = 0,
+        double offsetY = 0)
+    {
+        double left = workAreaLeft / dpiScale;
+        double top = workAreaTop / dpiScale;
+        double width = workAreaWidth / dpiScale;
+        double height = workAreaHeight / dpiScale;
+
+        if (layout == NotchLayout.RightCenter)
+        {
+            double w = RightCenterWindowWidth;
+            double h = RightCenterWindowHeight;
+            double l = left + width - w + offsetX;
+            double t = top + (height - h) / 2 + offsetY;
+            return (l, t, w, h);
+        }
+        else
+        {
+            double w = TopCenterWindowWidth;
+            double h = TopCenterWindowHeight;
+            double l = left + (width - w) / 2 + offsetX;
+            double t = top + offsetY;
+            return (l, t, w, h);
+        }
     }
 
     public static void Position(Window window, NotchLayout layout, string? targetMonitorDeviceName = null, double offsetX = 0, double offsetY = 0)
@@ -65,25 +98,19 @@ public static class ScreenPositionHelper
             // callers should re-invoke after SourceInitialized for an accurate value.
         }
 
-        var workArea = screen.WorkingArea; // physical pixels
-        double left = workArea.Left / dpiScale;
-        double top = workArea.Top / dpiScale;
-        double width = workArea.Width / dpiScale;
-        double height = workArea.Height / dpiScale;
+        var (winLeft, winTop, winWidth, winHeight) = CalculateWindowBounds(
+            layout,
+            screen.WorkingArea.Left,
+            screen.WorkingArea.Top,
+            screen.WorkingArea.Width,
+            screen.WorkingArea.Height,
+            dpiScale,
+            offsetX,
+            offsetY);
 
-        if (layout == NotchLayout.RightCenter)
-        {
-            window.Width = RightCenterWindowWidth;
-            window.Height = RightCenterWindowHeight;
-            window.Left = left + width - window.Width - 12 + offsetX; // small default gap off the true edge, user-adjustable
-            window.Top = top + (height - window.Height) / 2 + offsetY;
-        }
-        else
-        {
-            window.Width = TopCenterWindowWidth;
-            window.Height = TopCenterWindowHeight;
-            window.Left = left + (width - window.Width) / 2 + offsetX;
-            window.Top = top + offsetY;
-        }
+        window.Width = winWidth;
+        window.Height = winHeight;
+        window.Left = winLeft;
+        window.Top = winTop;
     }
 }

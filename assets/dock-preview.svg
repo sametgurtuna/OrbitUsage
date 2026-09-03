@@ -1,0 +1,147 @@
+<svg width="840" height="420" viewBox="0 0 840 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="cardGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#1E2235" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#0B0D14" stop-opacity="1" />
+    </radialGradient>
+    <filter id="flyoutShadow" x="-30" y="-20" width="400" height="340">
+      <feDropShadow dx="-10" dy="12" stdDeviation="24" flood-color="#000000" flood-opacity="0.85" />
+    </filter>
+    <filter id="dockShadow" x="-30" y="-20" width="160" height="420">
+      <feDropShadow dx="-8" dy="8" stdDeviation="20" flood-color="#000000" flood-opacity="0.9" />
+    </filter>
+  </defs>
+
+  <!-- Canvas Background Simulation (Desktop Workspace) -->
+  <rect width="840" height="420" rx="16" fill="#07080C" />
+  <!-- Subtle Grid lines to indicate transparent desktop environment -->
+  <g opacity="0.04" stroke="#FFFFFF" stroke-width="1">
+    <line x1="60" y1="0" x2="60" y2="420" />
+    <line x1="180" y1="0" x2="180" y2="420" />
+    <line x1="300" y1="0" x2="300" y2="420" />
+    <line x1="420" y1="0" x2="420" y2="420" />
+    <line x1="540" y1="0" x2="540" y2="420" />
+    <line x1="660" y1="0" x2="660" y2="420" />
+    <line x1="0" y1="80" x2="840" y2="80" />
+    <line x1="0" y1="200" x2="840" y2="200" />
+    <line x1="0" y1="320" x2="840" y2="320" />
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- FLYOUT CARD (Appears to the left of the dock with triangular callout)     -->
+  <!-- ========================================================================= -->
+  <g transform="translate(420, 80)" filter="url(#flyoutShadow)">
+    <!-- Triangular Speech Bubble Pointer (points right to active Antigravity gauge) -->
+    <path d="M 288,110 L 302,122 L 288,134 Z" fill="#0E1017" stroke="#252A3D" stroke-width="1" />
+    <path d="M 287,109 L 287,135" stroke="#0E1017" stroke-width="2" /> <!-- Mask overlap seam -->
+
+    <!-- Card Background & Border -->
+    <rect width="288" height="244" rx="18" fill="#0E1017" stroke="#252A3D" stroke-width="1.2" />
+
+    <!-- Card Content -->
+    <g transform="translate(20, 20)">
+      <!-- Header: Icon + Title + Timestamp -->
+      <g transform="translate(0, 0)">
+        <!-- Antigravity Delta Icon -->
+        <path d="M 9,3 L 15.5,15 L 12.5,15 L 9,8 L 5.5,15 L 2.5,15 Z" fill="#F8FAFC" />
+        <text x="24" y="13" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14.5" font-weight="600" fill="#F8FAFC">Antigravity Usage</text>
+        <text x="248" y="13" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="400" fill="#94A3B8" text-anchor="end">11 min ago</text>
+      </g>
+
+      <!-- Section 1: 5 Hour Limit -->
+      <g transform="translate(0, 36)">
+        <text x="0" y="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12.5" font-weight="500" fill="#E2E8F0">5 hour limit</text>
+        <text x="248" y="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="400" fill="#94A3B8" text-anchor="end">Resets in 4h 48m</text>
+
+        <!-- Progress Bar Track -->
+        <rect x="0" y="20" width="248" height="6" rx="3" fill="#1E2333" />
+        <!-- Progress Bar Fill (7%) -->
+        <rect x="0" y="20" width="22" height="6" rx="3" fill="#10B981" />
+
+        <text x="0" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="500" fill="#94A3B8">7% Used</text>
+      </g>
+
+      <!-- Section 2: Weekly Limit -->
+      <g transform="translate(0, 114)">
+        <text x="0" y="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12.5" font-weight="500" fill="#E2E8F0">Weekly limit</text>
+        <text x="248" y="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="400" fill="#94A3B8" text-anchor="end">Resets Wed 9:35 AM</text>
+
+        <!-- Progress Bar Track -->
+        <rect x="0" y="20" width="248" height="6" rx="3" fill="#1E2333" />
+        <!-- Progress Bar Fill (16%) -->
+        <rect x="0" y="20" width="58" height="6" rx="3" fill="#10B981" />
+
+        <text x="0" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="500" fill="#94A3B8">16% Used</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- RIGHT-EDGE DOCK WITH ORGANIC NOTCH FILLET SILHOUETTE                     -->
+  <!-- ========================================================================= -->
+  <g transform="translate(748, 40)" filter="url(#dockShadow)">
+    <!-- Organic Notch Silhouette (68px wide, curved fillets at top and bottom) -->
+    <path d="M 92,0 
+             L 92,340 
+             L 24,340 
+             C 24,320 0,312 0,290 
+             L 0,50 
+             C 0,28 24,20 24,0 
+             Z" 
+          fill="#08090E" stroke="#1E2235" stroke-width="1.2" />
+
+    <!-- Dock Content Items (Stacked vertically) -->
+    <g transform="translate(24, 0)">
+      <!-- Item 1: Claude -->
+      <g transform="translate(18, 48)">
+        <!-- Outer Track -->
+        <circle cx="22" cy="22" r="20" fill="#10131E" stroke="#1A2033" stroke-width="3" />
+        <!-- Progress Ring (25%) -->
+        <circle cx="22" cy="22" r="20" stroke="#06B6D4" stroke-width="3" stroke-dasharray="31.4 94.2" stroke-linecap="round" fill="none" transform="rotate(-90 22 22)" />
+        <!-- Claude Starburst Icon in Center -->
+        <g transform="translate(14, 14) scale(0.65)">
+          <path d="M12,2 L13.5,7.5 L18.5,4.5 L16,9.5 L21.5,9.5 L17.5,13.5 L22,16 L16.8,16.5 L17.5,21.5 L13.5,17.8 L12,22.5 L10.5,17.8 L6.5,21.5 L7.2,16.5 L2,16 L6.5,13.5 L2.5,9.5 L8,9.5 L5.5,4.5 L10.5,7.5 Z" fill="#F8FAFC" />
+        </g>
+        <!-- Text below ring -->
+        <text x="22" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#F8FAFC" text-anchor="middle">25%</text>
+      </g>
+
+      <!-- Item 2: Antigravity (Active / Hovered) -->
+      <g transform="translate(18, 142)">
+        <!-- Active glow backdrop -->
+        <circle cx="22" cy="22" r="23" fill="#10B981" opacity="0.12" />
+        <!-- Outer Track -->
+        <circle cx="22" cy="22" r="20" fill="#10131E" stroke="#1A2033" stroke-width="3" />
+        <!-- Progress Ring (8%) -->
+        <circle cx="22" cy="22" r="20" stroke="#10B981" stroke-width="3" stroke-dasharray="10 115" stroke-linecap="round" fill="none" transform="rotate(-90 22 22)" />
+        <!-- Antigravity Delta Icon in Center -->
+        <g transform="translate(13, 13) scale(0.75)">
+          <path d="M 12,3.5 L 20.5,19 L 16.5,19 L 12,10.2 L 7.5,19 L 3.5,19 Z" fill="#F8FAFC" />
+        </g>
+        <!-- Text below ring -->
+        <text x="22" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#10B981" text-anchor="middle">8%</text>
+      </g>
+
+      <!-- Item 3: ChatGPT / Codex -->
+      <g transform="translate(18, 236)">
+        <!-- Outer Track -->
+        <circle cx="22" cy="22" r="20" fill="#10131E" stroke="#1A2033" stroke-width="3" />
+        <!-- Progress Ring (12%) -->
+        <circle cx="22" cy="22" r="20" stroke="#A855F7" stroke-width="3" stroke-dasharray="15 110" stroke-linecap="round" fill="none" transform="rotate(-90 22 22)" />
+        <!-- Swirl Icon in Center -->
+        <g transform="translate(14, 14) scale(0.7)">
+          <circle cx="11" cy="11" r="5" stroke="#F8FAFC" stroke-width="2" fill="none" />
+          <path d="M 11,2 A 9,9 0 0,1 20,11" stroke="#F8FAFC" stroke-width="1.8" stroke-linecap="round" fill="none" />
+          <path d="M 11,20 A 9,9 0 0,1 2,11" stroke="#F8FAFC" stroke-width="1.8" stroke-linecap="round" fill="none" />
+        </g>
+        <!-- Text below ring -->
+        <text x="22" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#F8FAFC" text-anchor="middle">12%</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Bottom Left Label -->
+  <text x="40" y="385" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12.5" font-weight="500" fill="#64748B">
+    Press <tspan fill="#38BDF8" font-weight="700">Win + Alt + O</tspan> to toggle dock | Hover over right screen edge to reveal
+  </text>
+</svg>

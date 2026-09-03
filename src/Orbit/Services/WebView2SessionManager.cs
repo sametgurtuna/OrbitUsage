@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Web.WebView2.Core;
@@ -21,10 +21,30 @@ public class WebView2SessionManager : IAsyncDisposable
     public WebView2 SharedWebView { get; } = new();
     public bool IsInitialized { get; private set; }
     public string UserDataFolder { get; }
+    public bool IsInteractiveSessionActive { get; private set; }
 
+    private readonly SemaphoreSlim _sessionLock = new(1, 1);
     private Window? _hiddenHost;
     private Grid? _hiddenHostGrid;
     private Task<bool>? _initializeTask;
+
+    public async Task<bool> TryAcquireSessionAsync(CancellationToken ct = default)
+    {
+        if (IsInteractiveSessionActive) return false;
+        try
+        {
+            return await _sessionLock.WaitAsync(TimeSpan.FromSeconds(5), ct);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public void ReleaseSession()
+    {
+        try { _sessionLock.Release(); } catch { }
+    }
 
     public WebView2SessionManager()
     {
@@ -93,8 +113,9 @@ public class WebView2SessionManager : IAsyncDisposable
         _hiddenHost = new Window
         {
             Title = "Orbit (background)",
-            WindowStyle = WindowStyle.None,
+            WindowStyle = WindowStyle.ToolWindow,
             ShowInTaskbar = false,
+            ShowActivated = false,
             AllowsTransparency = false,
             Width = OffscreenSize,
             Height = OffscreenSize,
@@ -102,6 +123,12 @@ public class WebView2SessionManager : IAsyncDisposable
             Top = OffscreenPosition,
             Content = _hiddenHostGrid,
             ResizeMode = ResizeMode.NoResize,
+            Owner = App.GetAltTabSuppressor()
+        };
+        _hiddenHost.SourceInitialized += (s, e) =>
+        {
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(_hiddenHost).Handle;
+            Helpers.NativeMethods.MakeToolWindow(hwnd);
         };
         _hiddenHost.Show();
     }
@@ -119,21 +146,32 @@ public class WebView2SessionManager : IAsyncDisposable
             if (!ok) throw new InvalidOperationException("WebView2 Runtime is not available.");
         }
 
-        _hiddenHostGrid!.Children.Remove(SharedWebView);
+        await _sessionLock.WaitAsync();
+        IsInteractiveSessionActive = true;
+        try
+        {
+            _hiddenHostGrid!.Children.Remove(SharedWebView);
 
-        var loginWindow = new Views.LoginWindow(SharedWebView);
-        if (owner != null) loginWindow.Owner = owner;
+            var loginWindow = new Views.LoginWindow(SharedWebView);
+            if (owner != null) loginWindow.Owner = owner;
 
-        SharedWebView.CoreWebView2.Navigate(url);
+            SharedWebView.CoreWebView2.Navigate(url);
 
-        var tcs = new TaskCompletionSource();
-        loginWindow.Closed += (_, _) => tcs.TrySetResult();
-        loginWindow.Show();
-        await tcs.Task;
+            var tcs = new TaskCompletionSource();
+            loginWindow.Closed += (_, _) => tcs.TrySetResult();
+            loginWindow.Show();
+            await tcs.Task;
 
-        // Move the (still-initialized) control back to the hidden host for background polling.
-        loginWindow.ReleaseWebView();
-        _hiddenHostGrid.Children.Add(SharedWebView);
+            // Move the (still-initialized) control back to the hidden host for background polling.
+            loginWindow.ReleaseWebView();
+            if (!_hiddenHostGrid.Children.Contains(SharedWebView))
+                _hiddenHostGrid.Children.Add(SharedWebView);
+        }
+        finally
+        {
+            IsInteractiveSessionActive = false;
+            _sessionLock.Release();
+        }
     }
 
     public async ValueTask DisposeAsync()

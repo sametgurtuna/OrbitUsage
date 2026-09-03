@@ -13,15 +13,22 @@ public class NotchViewModel : ViewModelBase
 {
     private static readonly (string Key, string DisplayName, string AccentColorHex)[] KnownServices =
     {
-        ("Claude", "Claude", "#D97757"),
-        ("ChatGPT", "ChatGPT", "#D8D8E0"),
-        ("Antigravity", "Antigravity", "#3B82F6"),
+        ("Claude", "Claude", "#FF5722"),
+        ("Antigravity", "Antigravity", "#38BDF8"),
+        ("ChatGPT", "ChatGPT", "#10B981"),
     };
 
     private bool _isExpanded;
     private bool _isRefreshing;
+    private ServiceUsageViewModel? _hoveredService;
 
     public ObservableCollection<ServiceUsageViewModel> Services { get; } = new();
+
+    public ServiceUsageViewModel? HoveredService
+    {
+        get => _hoveredService;
+        set => SetField(ref _hoveredService, value);
+    }
 
     public bool IsExpanded
     {
@@ -78,6 +85,8 @@ public class NotchViewModel : ViewModelBase
 
     private void OnRefreshRequested() => RefreshRequested?.Invoke();
 
+    public event EventHandler? NotchLayoutSizeChanged;
+
     /// <summary>Applies a live UsageResult from UsageScraperService.UsageUpdated to the matching row.</summary>
     public void ApplyUsageUpdate(string serviceKey, UsageResult result)
     {
@@ -95,11 +104,21 @@ public class NotchViewModel : ViewModelBase
             row.LastUpdatedUtc = result.Timestamp;
             row.StatusMessage = null; // let PercentUsed drive DisplayText/Status again
             row.SetOverrideStatus(ComputeStatus(result.PercentUsed), null);
+
+            if (result.HasSessionData)
+            {
+                row.HasSessionGauge = true;
+                row.SessionPercentUsed = result.SessionPercentUsed!.Value;
+                row.SessionResetTimeText = result.SessionResetTimeText;
+            }
         }
         else
         {
-            // Keep whatever PercentUsed currently shows (last known value) but flag it as stale.
-            row.SetOverrideStatus(UsageStatus.Unavailable, "Data unavailable");
+            // If we have a valid last-known percentage, retain it instead of showing "Data unavailable".
+            if (row.PercentUsed == 0 && !row.LastUpdatedUtc.HasValue)
+            {
+                row.SetOverrideStatus(UsageStatus.Unavailable, "Data unavailable");
+            }
         }
     }
 
@@ -110,19 +129,55 @@ public class NotchViewModel : ViewModelBase
         _ => UsageStatus.Normal
     };
 
+    public void RebuildFromSettings(AppSettings settings)
+    {
+        Services.Clear();
+        SeedFromSettings(settings);
+        HookAggregateStatus();
+        OnPropertyChanged(nameof(AggregateStatus));
+        NotchLayoutSizeChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     private void SeedFromSettings(AppSettings settings)
     {
         foreach (var (key, displayName, accent) in KnownServices)
         {
+            if (settings.Services.TryGetValue(key, out var serviceSettings) && !serviceSettings.Enabled)
+                continue;
+
             var row = new ServiceUsageViewModel(key, displayName, accent);
-            if (settings.Services.TryGetValue(key, out var serviceSettings))
+            if (key is "Claude" or "Antigravity")
             {
-                row.PercentUsed = serviceSettings.LastKnownPercent;
-                row.ResetTimeText = serviceSettings.LastKnownResetText;
-                row.LastUpdatedUtc = serviceSettings.LastUpdatedUtc == default ? null : serviceSettings.LastUpdatedUtc;
-                if (serviceSettings.LastError != null)
-                    row.SetOverrideStatus(UsageStatus.Unavailable, "Data unavailable");
+                row.HasSessionGauge = true;
+                row.SessionPercentUsed = serviceSettings?.ManualPercent ?? 0;
             }
+            if (serviceSettings != null)
+            {
+                if (serviceSettings.ManualMode)
+                {
+                    row.PercentUsed = serviceSettings.ManualPercent;
+                    row.SessionPercentUsed = serviceSettings.ManualPercent;
+                    row.ResetTimeText = "Manual mode";
+                    row.SessionResetTimeText = "Manual mode";
+                    row.SetOverrideStatus(ComputeStatus(serviceSettings.ManualPercent), null);
+                }
+                else
+                {
+                    row.PercentUsed = serviceSettings.LastKnownPercent;
+                    row.ResetTimeText = serviceSettings.LastKnownResetText;
+                    row.LastUpdatedUtc = serviceSettings.LastUpdatedUtc == default ? null : serviceSettings.LastUpdatedUtc;
+                    if (serviceSettings.LastError != null && row.PercentUsed == 0 && !row.LastUpdatedUtc.HasValue)
+                        row.SetOverrideStatus(UsageStatus.Unavailable, "Data unavailable");
+
+                    if (serviceSettings.LastKnownSessionPercent.HasValue)
+                    {
+                        row.HasSessionGauge = true;
+                        row.SessionPercentUsed = serviceSettings.LastKnownSessionPercent.Value;
+                        row.SessionResetTimeText = serviceSettings.LastKnownSessionResetText;
+                    }
+                }
+            }
+            row.SessionExpandedChanged += (s, e) => NotchLayoutSizeChanged?.Invoke(this, EventArgs.Empty);
             Services.Add(row);
         }
 
@@ -133,13 +188,34 @@ public class NotchViewModel : ViewModelBase
 
     private void SeedMockData()
     {
-        var claude = new ServiceUsageViewModel("Claude", "Claude", "#D97757") { PercentUsed = 42, ResetTimeText = "in 2h 15m", LastUpdatedUtc = DateTime.UtcNow };
-        var chatGpt = new ServiceUsageViewModel("ChatGPT", "ChatGPT", "#D8D8E0");
+        var claude = new ServiceUsageViewModel("Claude", "Claude", "#FF5722")
+        {
+            PercentUsed = 7,
+            ResetTimeText = "Thu 12:00 AM",
+            HasSessionGauge = true,
+            SessionPercentUsed = 73,
+            SessionResetTimeText = "in 51 min",
+            LastUpdatedUtc = DateTime.UtcNow
+        };
+        var antigravity = new ServiceUsageViewModel("Antigravity", "Antigravity", "#38BDF8")
+        {
+            PercentUsed = 21,
+            ResetTimeText = "in 3d 12h",
+            HasSessionGauge = true,
+            SessionPercentUsed = 52,
+            SessionResetTimeText = "in 2h 15m",
+            LastUpdatedUtc = DateTime.UtcNow
+        };
+        var chatGpt = new ServiceUsageViewModel("ChatGPT", "ChatGPT", "#10B981")
+        {
+            PercentUsed = 21,
+            ResetTimeText = "in 4d",
+            LastUpdatedUtc = DateTime.UtcNow
+        };
         chatGpt.SetOverrideStatus(UsageStatus.NotImplemented, "Not implemented yet");
-        var antigravity = new ServiceUsageViewModel("Antigravity", "Antigravity", "#3B82F6") { PercentUsed = 15, ResetTimeText = "in 3d", LastUpdatedUtc = DateTime.UtcNow };
 
         Services.Add(claude);
-        Services.Add(chatGpt);
         Services.Add(antigravity);
+        Services.Add(chatGpt);
     }
 }

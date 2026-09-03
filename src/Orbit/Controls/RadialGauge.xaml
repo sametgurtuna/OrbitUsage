@@ -5,17 +5,50 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              x:Name="Root">
-    <Grid Width="{Binding Diameter, ElementName=Root}" Height="{Binding Diameter, ElementName=Root}">
-        <Ellipse x:Name="TrackEllipse" Stroke="#26FFFFFF" />
-        <Path x:Name="ArcPath" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+        <!-- Progress Ring with Centered Icon (Visual Style) or Percentage -->
+        <Grid Width="{Binding Diameter, ElementName=Root}" Height="{Binding Diameter, ElementName=Root}" HorizontalAlignment="Center">
+            <Ellipse x:Name="BackgroundEllipse" Fill="{DynamicResource GaugeDiscBrush}" />
+            <Ellipse x:Name="TrackEllipse" Stroke="{DynamicResource GaugeTrackBrush}" />
+            <Path x:Name="ArcPath" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock x:Name="PercentText" Foreground="White" FontFamily="Segoe UI" FontWeight="SemiBold"
-                       HorizontalAlignment="Center" />
-            <TextBlock x:Name="LabelText" Foreground="#AAAAAA" FontFamily="Segoe UI"
-                       HorizontalAlignment="Center" Margin="0,1,0,0" />
-            <TextBlock x:Name="SubLabelText" Foreground="#888888" FontFamily="Segoe UI"
-                       HorizontalAlignment="Center" Margin="0,1,0,0" />
-        </StackPanel>
-    </Grid>
+            <!-- PNG Logo Masked with Theme Brush (for Claude and Antigravity) -->
+            <Rectangle x:Name="CenterImageRect" Width="20" Height="20"
+                       Fill="{DynamicResource GaugeIconBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="Collapsed">
+                <Rectangle.OpacityMask>
+                    <ImageBrush x:Name="CenterImageBrush" Stretch="Uniform" />
+                </Rectangle.OpacityMask>
+            </Rectangle>
+
+            <!-- Vector Fallback Icon -->
+            <Path x:Name="CenterIconPath" Width="18" Height="18" Stretch="Uniform" Fill="{DynamicResource GaugeIconBrush}"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
+
+            <!-- Fallback / Classic Center Text -->
+            <StackPanel x:Name="CenterTextPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-2,0,0">
+                <TextBlock x:Name="PercentText" FontFamily="Segoe UI Variable, Segoe UI" FontWeight="Bold"
+                           Foreground="{DynamicResource GaugeTextBrush}" HorizontalAlignment="Center" TextAlignment="Center" />
+                <TextBlock x:Name="SubtitleText" Text="left" FontFamily="Segoe UI Variable, Segoe UI"
+                           FontSize="9.5" Foreground="{DynamicResource NotchTextMutedBrush}" HorizontalAlignment="Center" Margin="0,-2,0,0" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Screenshot Style: Percentage text below circle -->
+        <TextBlock x:Name="BottomPercentText" FontFamily="Segoe UI Variable, Segoe UI" FontWeight="SemiBold"
+                   FontSize="13.5" Foreground="{DynamicResource GaugeTextBrush}" HorizontalAlignment="Center" TextAlignment="Center"
+                   Margin="0,4,0,0" Visibility="Collapsed" />
+
+        <!-- Classic Service Label (for fallback or sub-gauges) -->
+        <TextBlock x:Name="LabelText" Foreground="{DynamicResource NotchTextPrimaryBrush}" FontFamily="Segoe UI"
+                   FontWeight="SemiBold" FontSize="11.5" HorizontalAlignment="Center" Margin="0,5,0,0" Visibility="Collapsed" />
+
+        <!-- Classic Reset Time Badge -->
+        <Border x:Name="SubLabelBadge" CornerRadius="5" Background="{DynamicResource BadgeBackgroundBrush}"
+                Padding="6,2" Margin="0,3,0,0" HorizontalAlignment="Center" Visibility="Collapsed">
+            <TextBlock x:Name="SubLabelText" Foreground="{DynamicResource NotchTextMutedBrush}" FontFamily="Segoe UI"
+                       FontSize="9.5" FontWeight="Medium" HorizontalAlignment="Center" />
+        </Border>
+    </StackPanel>
 </UserControl>

@@ -3,7 +3,7 @@
 ; and automatically adds Orbit to the user's PATH so 'orbit status' works in any terminal.
 
 #define MyAppName "Orbit"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "0.1.1"
 #define MyAppPublisher "Orbit"
 #define MyAppExeName "Orbit.exe"
 
@@ -16,12 +16,13 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=output
-OutputBaseFilename=OrbitSetup
+OutputBaseFilename=OrbitSetup-v0.1.1
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
 ArchitecturesInstallIn64BitMode=x64compatible
+SetupIconFile=orbit.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 ChangesEnvironment=yes
 
@@ -35,6 +36,7 @@ Name: "envPath"; Description: "Add {#MyAppName} to system PATH (enables 'orbit s
 
 [Files]
 Source: "..\publish\win-x64\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\win-x64\Resources\*"; DestDir: "{app}\Resources"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 Source: "..\orbit.cmd"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

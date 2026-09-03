@@ -1,134 +1,763 @@
 <Window x:Class="Orbit.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Orbit - Settings"
-        Width="440" SizeToContent="Height" MaxHeight="700"
+        Title="Orbit Settings"
+        Icon="pack://application:,,,/Resources/orbit.ico"
+        Width="580" Height="580"
         WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
         ResizeMode="NoResize"
-        FontFamily="Segoe UI" FontSize="12">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="16">
+        FontFamily="Segoe UI Variable, Segoe UI" FontSize="12">
 
-        <TextBlock Text="Services" FontWeight="SemiBold" Margin="0,0,0,6" />
+    <Window.Resources>
+        <!-- Window Outer Glow & DropShadow -->
+        <DropShadowEffect x:Key="WindowShadow" BlurRadius="28" ShadowDepth="4" Opacity="0.5" Color="#000000" />
+        <DropShadowEffect x:Key="ButtonGlow" BlurRadius="12" ShadowDepth="1" Opacity="0.35" Color="#3B82F6" />
 
-        <Border BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,4">
-            <StackPanel>
-                <DockPanel Margin="0,0,0,4">
-                    <CheckBox x:Name="ClaudeEnabledCheck" Content="Claude - enabled" DockPanel.Dock="Left" VerticalAlignment="Center" />
-                    <Button x:Name="ClaudeLoginButton" Content="Log into Claude..." DockPanel.Dock="Right"
-                            Click="ClaudeLoginButton_Click" Padding="6,2" HorizontalAlignment="Right" />
+        <!-- Minimal Thin ScrollBar -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="5" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border CornerRadius="2.5" Background="{DynamicResource SettingsScrollThumbBrush}" />
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Segmented Tab RadioButton -->
+        <Style x:Key="TabRadioStyle" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SettingsTextSecondaryBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="TabBorder" Background="Transparent" CornerRadius="8" Padding="14,7" Margin="2,0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource SettingsTabHoverBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SettingsTextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource SettingsTabActiveBrush}" />
+                                <Setter Property="Foreground" Value="#3B82F6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Segmented Pill Option RadioButton -->
+        <Style x:Key="SegmentedPillStyle" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SettingsTextSecondaryBrush}" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Pill" Background="Transparent" CornerRadius="6" Padding="12,5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="{DynamicResource SettingsTabHoverBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SettingsTextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="#3B82F6" />
+                                <Setter Property="Foreground" Value="#FFFFFF" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern iOS-style Toggle Switch -->
+        <Style x:Key="ToggleSwitchStyle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid VerticalAlignment="Center">
+                            <Border x:Name="Track" Width="40" Height="22" CornerRadius="11"
+                                    Background="{DynamicResource SettingsInnerCardBrush}"
+                                    BorderBrush="{DynamicResource SettingsBorderBrush}" BorderThickness="1">
+                                <Grid>
+                                    <Ellipse x:Name="Thumb" Width="16" Height="16"
+                                             Fill="{DynamicResource SettingsTextMutedBrush}"
+                                             HorizontalAlignment="Left" Margin="2,0,0,0">
+                                        <Ellipse.Effect>
+                                            <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.25" Color="#000000" />
+                                        </Ellipse.Effect>
+                                    </Ellipse>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="#3B82F6" />
+                                <Setter TargetName="Track" Property="BorderBrush" Value="#60A5FA" />
+                                <Setter TargetName="Thumb" Property="Fill" Value="#FFFFFF" />
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
+                                <Setter TargetName="Thumb" Property="Margin" Value="0,0,2,0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Notification Chip CheckBox -->
+        <Style x:Key="ChipCheckStyle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SettingsTextSecondaryBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="Chip" Background="{DynamicResource SettingsInnerCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}" BorderThickness="1"
+                                CornerRadius="6" Padding="8,3" Margin="0,0,6,0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chip" Property="BorderBrush" Value="#3B82F6" />
+                                <Setter Property="Foreground" Value="{DynamicResource SettingsTextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chip" Property="Background" Value="{DynamicResource SettingsCardBrush}" />
+                                <Setter TargetName="Chip" Property="BorderBrush" Value="#3B82F6" />
+                                <Setter Property="Foreground" Value="#3B82F6" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern Slider -->
+        <Style TargetType="Slider">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid VerticalAlignment="Center">
+                            <Border Height="4" CornerRadius="2" Background="{DynamicResource SettingsInnerCardBrush}" BorderThickness="0" Margin="6,0" />
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.DecreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" CornerRadius="2" Background="#3B82F6" Margin="6,0,0,0" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.IncreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" CornerRadius="2" Background="Transparent" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Grid Width="16" Height="16">
+                                                    <Ellipse Fill="#FFFFFF">
+                                                        <Ellipse.Effect>
+                                                            <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.3" Color="#000000" />
+                                                        </Ellipse.Effect>
+                                                    </Ellipse>
+                                                    <Ellipse Width="6" Height="6" Fill="#3B82F6" />
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern ComboBox -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{DynamicResource SettingsTextPrimaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SettingsInnerCardBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton" ClickMode="Press" Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="Border" CornerRadius="8"
+                                                Background="{DynamicResource SettingsInnerCardBrush}"
+                                                BorderBrush="{DynamicResource SettingsBorderBrush}" BorderThickness="1" Padding="12,7">
+                                            <DockPanel LastChildFill="False">
+                                                <ContentPresenter DockPanel.Dock="Left" Content="{TemplateBinding Content}" VerticalAlignment="Center" />
+                                                <Path DockPanel.Dock="Right" Data="M0,0 L4,4 L8,0"
+                                                      Stroke="{DynamicResource SettingsTextSecondaryBrush}" StrokeThickness="1.5"
+                                                      HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,0,2,0" />
+                                            </DockPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Border" Property="BorderBrush" Value="#3B82F6" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter Name="ContentSite" IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="12,7,30,7" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                            <Popup Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                <Border Name="DropDown" CornerRadius="8"
+                                        Background="{DynamicResource SettingsCardBrush}"
+                                        BorderBrush="{DynamicResource SettingsBorderBrush}" BorderThickness="1"
+                                        MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        Margin="0,4,0,0" Effect="{StaticResource WindowShadow}">
+                                    <ScrollViewer Margin="4" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource SettingsTextPrimaryBrush}" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ItemBorder" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource SettingsTabHoverBrush}" />
+                                <Setter Property="Foreground" Value="#3B82F6" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#3B82F6" />
+                                <Setter Property="Foreground" Value="#FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern TextBox -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource SettingsInnerCardBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SettingsTextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="CaretBrush" Value="#3B82F6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Primary Pill Button -->
+        <Style x:Key="SaveButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#3B82F6" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="20,7" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Effect" Value="{StaticResource ButtonGlow}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#2563EB" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Ghost Button -->
+        <Style x:Key="GhostButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource SettingsInnerCardBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SettingsTextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingsBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SettingsTabHoverBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <!-- Outer Window Glass Container -->
+    <Border Margin="14" CornerRadius="18"
+            Background="{DynamicResource SettingsBackgroundBrush}"
+            BorderBrush="{DynamicResource SettingsBorderBrush}"
+            BorderThickness="1.5" Effect="{StaticResource WindowShadow}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="52" /> <!-- Header & Window Drag -->
+                <RowDefinition Height="46" /> <!-- Tabs -->
+                <RowDefinition Height="*" />  <!-- Tab Content -->
+                <RowDefinition Height="60" /> <!-- Footer Actions -->
+            </Grid.RowDefinitions>
+
+            <!-- 1. Header & Draggable Bar -->
+            <Border Grid.Row="0" Background="{DynamicResource SettingsCardBrush}"
+                    CornerRadius="18,18,0,0" BorderBrush="{DynamicResource SettingsBorderBrush}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="Window_MouseLeftButtonDown">
+                <DockPanel Margin="18,0,14,0" LastChildFill="False">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                        <Ellipse Width="10" Height="10" Fill="#3DDC84" Margin="0,0,10,0" />
+                        <TextBlock Text="Orbit" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" VerticalAlignment="Center" />
+                        <Border Background="{DynamicResource SettingsInnerCardBrush}" CornerRadius="5" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Settings" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextMutedBrush}" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Close ✕ Button -->
+                    <Button DockPanel.Dock="Right" Width="30" Height="30" Background="Transparent" BorderThickness="0"
+                            Cursor="Hand" Click="CloseButton_Click" ToolTip="Close">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bdr" Background="Transparent" CornerRadius="6">
+                                    <Path Data="M0,0 L10,10 M10,0 L0,10" Stroke="{DynamicResource SettingsTextSecondaryBrush}" StrokeThickness="1.8"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" Width="10" Height="10" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bdr" Property="Background" Value="#22888888" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                 </DockPanel>
-                <CheckBox x:Name="ClaudeManualModeCheck" Content="Manual mode (skip scraping, use value below)" Margin="0,2" />
-                <DockPanel Margin="0,2,0,0">
-                    <TextBlock Text="Manual %:" VerticalAlignment="Center" Width="70" />
-                    <TextBox x:Name="ClaudeManualPercentBox" Width="60" />
-                    <Slider x:Name="ClaudeManualPercentSlider" Minimum="0" Maximum="100"
-                            Margin="8,0,0,0" ValueChanged="ClaudeManualPercentSlider_ValueChanged" />
+            </Border>
+
+            <!-- 2. Segmented Navigation Tabs -->
+            <Border Grid.Row="1" Background="{DynamicResource SettingsBackgroundBrush}"
+                    BorderBrush="{DynamicResource SettingsBorderBrush}" BorderThickness="0,0,0,1" Padding="14,6">
+                <Border HorizontalAlignment="Left" Background="{DynamicResource SettingsCardBrush}"
+                        BorderBrush="{DynamicResource SettingsBorderBrush}" BorderThickness="1" CornerRadius="9" Padding="2">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="TabServicesRadio" Content="⚡ Services" Style="{StaticResource TabRadioStyle}"
+                                     GroupName="SettingsTabs" IsChecked="True" Checked="TabRadio_Checked" />
+                        <RadioButton x:Name="TabAppearanceRadio" Content="🎨 Appearance" Style="{StaticResource TabRadioStyle}"
+                                     GroupName="SettingsTabs" Checked="TabRadio_Checked" />
+                        <RadioButton x:Name="TabSystemRadio" Content="🌐 System &amp; API" Style="{StaticResource TabRadioStyle}"
+                                     GroupName="SettingsTabs" Checked="TabRadio_Checked" />
+                    </StackPanel>
+                </Border>
+            </Border>
+
+            <!-- 3. Tab Contents Container -->
+            <Grid Grid.Row="2" Margin="18,14,18,10">
+
+                <!-- TAB 1: Services -->
+                <ScrollViewer x:Name="ServicesTabGrid" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Claude Service Card -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,12">
+                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <Ellipse Width="10" Height="10" Fill="#D97757" Margin="0,0,10,0" />
+                                        <StackPanel>
+                                            <TextBlock Text="Claude" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" />
+                                            <TextBlock Text="claude.ai weekly limit &amp; session quota" FontSize="11" Foreground="{DynamicResource SettingsTextMutedBrush}" Margin="0,1,0,0" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                        <Button x:Name="ClaudeLoginButton" Content="Log in..." Style="{StaticResource GhostButtonStyle}"
+                                                Padding="10,4" Margin="0,0,12,0" FontSize="11" Command="{Binding ClaudeLoginCommand}" />
+                                        <CheckBox x:Name="ClaudeEnabledCheck" IsChecked="{Binding ClaudeEnabled}" Style="{StaticResource ToggleSwitchStyle}" />
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <!-- Claude Controls -->
+                                <Border Background="{DynamicResource SettingsInnerCardBrush}" CornerRadius="8" Padding="12,10">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Manual Mode (Override live scraping)" Foreground="{DynamicResource SettingsTextSecondaryBrush}" VerticalAlignment="Center" DockPanel.Dock="Left" />
+                                            <CheckBox x:Name="ClaudeManualModeCheck" IsChecked="{Binding ClaudeManualMode}" Style="{StaticResource ToggleSwitchStyle}" DockPanel.Dock="Right" />
+                                        </DockPanel>
+
+                                        <DockPanel Margin="0,4,0,8">
+                                            <TextBlock Text="Fixed Quota:" Foreground="{DynamicResource SettingsTextMutedBrush}" VerticalAlignment="Center" Width="75" />
+                                            <TextBox x:Name="ClaudeManualPercentBox" Text="{Binding ClaudeManualPercent, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="45" HorizontalContentAlignment="Center" />
+                                            <Slider x:Name="ClaudeManualPercentSlider" Value="{Binding ClaudeManualPercent}" Minimum="0" Maximum="100" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                        </DockPanel>
+
+                                        <DockPanel Margin="0,4,0,0">
+                                            <TextBlock Text="Alerts:" Foreground="{DynamicResource SettingsTextMutedBrush}" VerticalAlignment="Center" Width="75" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <CheckBox x:Name="ClaudeNotify80Check" IsChecked="{Binding ClaudeNotify80}" Content="80%" Style="{StaticResource ChipCheckStyle}" />
+                                                <CheckBox x:Name="ClaudeNotify95Check" IsChecked="{Binding ClaudeNotify95}" Content="95%" Style="{StaticResource ChipCheckStyle}" />
+                                                <CheckBox x:Name="ClaudeNotify100Check" IsChecked="{Binding ClaudeNotify100}" Content="100%" Style="{StaticResource ChipCheckStyle}" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Antigravity Service Card -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,12">
+                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <Ellipse Width="10" Height="10" Fill="#3B82F6" Margin="0,0,10,0" />
+                                        <StackPanel>
+                                            <TextBlock Text="Antigravity" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" />
+                                            <TextBlock Text="Headless background monitoring via agy CLI" FontSize="11" Foreground="{DynamicResource SettingsTextMutedBrush}" Margin="0,1,0,0" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                        <Border Background="{DynamicResource SettingsInnerCardBrush}" CornerRadius="5" Padding="6,2" Margin="0,0,12,0">
+                                            <TextBlock Text="⚡ CLI" FontSize="10.5" Foreground="#3B82F6" FontWeight="SemiBold" />
+                                        </Border>
+                                        <CheckBox x:Name="AntigravityEnabledCheck" IsChecked="{Binding AntigravityEnabled}" Style="{StaticResource ToggleSwitchStyle}" />
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <!-- Antigravity Controls -->
+                                <Border Background="{DynamicResource SettingsInnerCardBrush}" CornerRadius="8" Padding="12,10">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Manual Mode (Override CLI scraping)" Foreground="{DynamicResource SettingsTextSecondaryBrush}" VerticalAlignment="Center" DockPanel.Dock="Left" />
+                                            <CheckBox x:Name="AntigravityManualModeCheck" IsChecked="{Binding AntigravityManualMode}" Style="{StaticResource ToggleSwitchStyle}" DockPanel.Dock="Right" />
+                                        </DockPanel>
+
+                                        <DockPanel Margin="0,4,0,8">
+                                            <TextBlock Text="Fixed Quota:" Foreground="{DynamicResource SettingsTextMutedBrush}" VerticalAlignment="Center" Width="75" />
+                                            <TextBox x:Name="AntigravityManualPercentBox" Text="{Binding AntigravityManualPercent, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="45" HorizontalContentAlignment="Center" />
+                                            <Slider x:Name="AntigravityManualPercentSlider" Value="{Binding AntigravityManualPercent}" Minimum="0" Maximum="100" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                        </DockPanel>
+
+                                        <DockPanel Margin="0,4,0,0">
+                                            <TextBlock Text="Alerts:" Foreground="{DynamicResource SettingsTextMutedBrush}" VerticalAlignment="Center" Width="75" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <CheckBox x:Name="AntigravityNotify80Check" IsChecked="{Binding AntigravityNotify80}" Content="80%" Style="{StaticResource ChipCheckStyle}" />
+                                                <CheckBox x:Name="AntigravityNotify95Check" IsChecked="{Binding AntigravityNotify95}" Content="95%" Style="{StaticResource ChipCheckStyle}" />
+                                                <CheckBox x:Name="AntigravityNotify100Check" IsChecked="{Binding AntigravityNotify100}" Content="100%" Style="{StaticResource ChipCheckStyle}" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ChatGPT Placeholder Card -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="14" Opacity="0.55">
+                            <DockPanel>
+                                <TextBlock Text="ChatGPT" FontSize="13" Foreground="{DynamicResource SettingsTextSecondaryBrush}" VerticalAlignment="Center" DockPanel.Dock="Left" />
+                                <TextBlock Text="Planned in upcoming release" FontSize="11" Foreground="{DynamicResource SettingsTextMutedBrush}" VerticalAlignment="Center" DockPanel.Dock="Right" />
+                                <CheckBox x:Name="ChatGptEnabledCheck" Visibility="Collapsed" IsEnabled="False" />
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- TAB 2: Appearance & Position -->
+                <ScrollViewer x:Name="AppearanceTabGrid" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                    <StackPanel>
+                        <!-- Layout & Docking -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Docking Layout" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" Margin="0,0,0,10" />
+                                <Border Background="{DynamicResource SettingsInnerCardBrush}" CornerRadius="8" Padding="4" HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton x:Name="LayoutTopCenterRadio" Content="⬒ Top Center (Horizontal)" Style="{StaticResource SegmentedPillStyle}"
+                                                     GroupName="Layout" Margin="0,0,4,0" IsChecked="{Binding IsLayoutTopCenter}" />
+                                        <RadioButton x:Name="LayoutRightCenterRadio" Content="⬓ Right Center (Vertical)" Style="{StaticResource SegmentedPillStyle}"
+                                                     GroupName="Layout" IsChecked="{Binding IsLayoutRightCenter}" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Theme Selection -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Theme" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" Margin="0,0,0,10" />
+                                <Border Background="{DynamicResource SettingsInnerCardBrush}" CornerRadius="8" Padding="4" HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton x:Name="ThemeDarkRadio" Content="🌙 Dark" Style="{StaticResource SegmentedPillStyle}"
+                                                     GroupName="Theme" Margin="0,0,4,0" IsChecked="{Binding IsThemeDark}" />
+                                        <RadioButton x:Name="ThemeLightRadio" Content="☀️ Light" Style="{StaticResource SegmentedPillStyle}"
+                                                     GroupName="Theme" Margin="0,0,4,0" IsChecked="{Binding IsThemeLight}" />
+                                        <RadioButton x:Name="ThemeSystemRadio" Content="⚙️ System" Style="{StaticResource SegmentedPillStyle}"
+                                                     GroupName="Theme" IsChecked="{Binding IsThemeSystem}" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Animation Speed -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Animation Speed" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" Margin="0,0,0,10" />
+                                <Border Background="{DynamicResource SettingsInnerCardBrush}" CornerRadius="8" Padding="4" HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton x:Name="AnimSpeedFastRadio" Content="⚡ Fast" Style="{StaticResource SegmentedPillStyle}"
+                                                     GroupName="AnimSpeed" Margin="0,0,4,0" IsChecked="{Binding IsSpeedFast}" />
+                                        <RadioButton x:Name="AnimSpeedNormalRadio" Content="🎯 Normal" Style="{StaticResource SegmentedPillStyle}"
+                                                     GroupName="AnimSpeed" Margin="0,0,4,0" IsChecked="{Binding IsSpeedNormal}" />
+                                        <RadioButton x:Name="AnimSpeedFluidRadio" Content="🌊 Fluid" Style="{StaticResource SegmentedPillStyle}"
+                                                     GroupName="AnimSpeed" IsChecked="{Binding IsSpeedFluid}" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Pin to Top / Always on Top Card -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                    <TextBlock Text="Pin to Top (Always on Top)" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" />
+                                    <TextBlock Text="Keep notch floating above all apps. Turn off to show only on desktop." FontSize="11" Foreground="{DynamicResource SettingsTextMutedBrush}" Margin="0,2,0,0" />
+                                </StackPanel>
+                                <CheckBox x:Name="AlwaysOnTopCheck" IsChecked="{Binding AlwaysOnTop}" Style="{StaticResource ToggleSwitchStyle}" DockPanel.Dock="Right" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Display Monitor & Offsets -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="Target Display &amp; Fine Positioning" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" Margin="0,0,0,10" />
+                                <ComboBox x:Name="MonitorComboBox" ItemsSource="{Binding Monitors}" SelectedValue="{Binding SelectedMonitorDeviceName}"
+                                          DisplayMemberPath="DisplayName" SelectedValuePath="DeviceName" Margin="0,0,0,14" />
+
+                                <DockPanel Margin="0,0,0,8">
+                                    <TextBlock Text="Offset X (Horizontal):" Foreground="{DynamicResource SettingsTextSecondaryBrush}" Width="135" VerticalAlignment="Center" />
+                                    <TextBox x:Name="OffsetXBox" Text="{Binding NotchOffsetX, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="45" DockPanel.Dock="Left" TextAlignment="Right" />
+                                    <Slider x:Name="OffsetXSlider" Value="{Binding NotchOffsetX}" Minimum="-100" Maximum="100" Margin="14,0,0,0" VerticalAlignment="Center" />
+                                </DockPanel>
+
+                                <DockPanel Margin="0,6,0,0">
+                                    <TextBlock Text="Offset Y (Vertical):" Foreground="{DynamicResource SettingsTextSecondaryBrush}" Width="135" VerticalAlignment="Center" />
+                                    <TextBox x:Name="OffsetYBox" Text="{Binding NotchOffsetY, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="45" DockPanel.Dock="Left" TextAlignment="Right" />
+                                    <Slider x:Name="OffsetYSlider" Value="{Binding NotchOffsetY}" Minimum="-100" Maximum="100" Margin="14,0,0,0" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- TAB 3: System & API -->
+                <ScrollViewer x:Name="SystemTabGrid" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                    <StackPanel>
+                        <!-- Global Hotkey Card -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,10">
+                                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="Global Keyboard Shortcut" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" />
+                                        <TextBlock Text="Toggle notch visibility from anywhere" FontSize="11" Foreground="{DynamicResource SettingsTextMutedBrush}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="HotkeyEnabledCheck" IsChecked="{Binding HotkeyEnabled}" Style="{StaticResource ToggleSwitchStyle}" DockPanel.Dock="Right" VerticalAlignment="Center" />
+                                </DockPanel>
+
+                                <Border Background="{DynamicResource SettingsInnerCardBrush}" CornerRadius="8" Padding="12,10">
+                                    <DockPanel LastChildFill="False">
+                                        <TextBlock Text="Hotkey:" Foreground="{DynamicResource SettingsTextSecondaryBrush}" Width="60" VerticalAlignment="Center" DockPanel.Dock="Left" />
+                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                            <ComboBox x:Name="HotkeyModifierCombo" ItemsSource="{Binding AvailableModifiers}" SelectedItem="{Binding HotkeyModifiers}" Width="110" Margin="0,0,8,0" />
+                                            <TextBlock Text="+" Foreground="{DynamicResource SettingsTextMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <TextBox x:Name="HotkeyKeyBox" Text="{Binding HotkeyKey, UpdateSourceTrigger=PropertyChanged}" Width="40" HorizontalContentAlignment="Center" MaxLength="5" />
+                                        </StackPanel>
+                                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                                BorderBrush="{DynamicResource SettingsBorderBrush}" BorderThickness="1"
+                                                CornerRadius="6" Padding="10,4" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                            <TextBlock x:Name="HotkeyPreviewText" Text="{Binding HotkeyPreviewText}" FontSize="11" Foreground="#3B82F6" FontWeight="SemiBold" />
+                                        </Border>
+                                    </DockPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Refresh Interval Card -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Left">
+                                    <TextBlock Text="Background Refresh Interval" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" />
+                                    <TextBlock Text="Frequency of headless quota sync" FontSize="11" Foreground="{DynamicResource SettingsTextMutedBrush}" Margin="0,2,0,0" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                    <TextBox x:Name="IntervalBox" Text="{Binding RefreshIntervalMinutes, UpdateSourceTrigger=LostFocus}" Width="45" HorizontalContentAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBlock Text="minutes" Foreground="{DynamicResource SettingsTextSecondaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Local REST API Card -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,10">
+                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <Ellipse Width="8" Height="8" Fill="#3DDC84" Margin="0,0,8,0" />
+                                        <TextBlock Text="Local REST API Server" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="LocalApiEnabledCheck" IsChecked="{Binding EnableLocalApi}" Style="{StaticResource ToggleSwitchStyle}" DockPanel.Dock="Right" />
+                                </DockPanel>
+
+                                <Border Background="{DynamicResource SettingsInnerCardBrush}" CornerRadius="8" Padding="12,10">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Server Port:" Foreground="{DynamicResource SettingsTextSecondaryBrush}" Width="80" VerticalAlignment="Center" />
+                                            <TextBox x:Name="LocalApiPortBox" Text="{Binding LocalApiPort, UpdateSourceTrigger=LostFocus}" Width="60" DockPanel.Dock="Left" />
+                                            <Button x:Name="OpenApiInBrowserButton" Content="Open Web Dashboard" Style="{StaticResource GhostButtonStyle}"
+                                                    DockPanel.Dock="Right" Padding="10,4" FontSize="11" Command="{Binding OpenApiInBrowserCommand}" />
+                                        </DockPanel>
+                                        <TextBlock Text="http://127.0.0.1:18923/api/usage" Foreground="#3B82F6" FontSize="11" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Startup & Diagnostics Card -->
+                        <Border Background="{DynamicResource SettingsCardBrush}"
+                                BorderBrush="{DynamicResource SettingsBorderBrush}"
+                                CornerRadius="12" BorderThickness="1" Padding="16">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,12">
+                                    <TextBlock Text="Launch Orbit on Windows Startup" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SettingsTextPrimaryBrush}" VerticalAlignment="Center" />
+                                    <CheckBox x:Name="StartWithWindowsCheck" IsChecked="{Binding StartWithWindows}" Style="{StaticResource ToggleSwitchStyle}" DockPanel.Dock="Right" />
+                                </DockPanel>
+
+                                <DockPanel Margin="0,4,0,0">
+                                    <TextBlock Text="Selectors Config:" Foreground="{DynamicResource SettingsTextMutedBrush}" VerticalAlignment="Center" />
+                                    <Button x:Name="ReloadSelectorsButton" Content="Reload selectors.json" Style="{StaticResource GhostButtonStyle}"
+                                            DockPanel.Dock="Right" Padding="10,4" FontSize="11" Command="{Binding ReloadSelectorsCommand}" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+            </Grid>
+
+            <!-- 4. Footer Actions -->
+            <Border Grid.Row="3" Background="{DynamicResource SettingsCardBrush}"
+                    CornerRadius="0,0,18,18" BorderBrush="{DynamicResource SettingsBorderBrush}" BorderThickness="0,1,0,0" Padding="18,0">
+                <DockPanel LastChildFill="False">
+                    <!-- Status / Feedback Text -->
+                    <TextBlock x:Name="StatusText" Text="{Binding StatusText}"
+                               Foreground="{DynamicResource SettingsTextSecondaryBrush}" FontSize="11" VerticalAlignment="Center"
+                               DockPanel.Dock="Left" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxWidth="300" />
+
+                    <!-- Buttons -->
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                        <Button Content="Cancel" Style="{StaticResource GhostButtonStyle}" Margin="0,0,10,0" Command="{Binding CancelCommand}" />
+                        <Button Content="Save Changes" Style="{StaticResource SaveButtonStyle}" Command="{Binding SaveCommand}" IsDefault="True" />
+                    </StackPanel>
                 </DockPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                    <TextBlock Text="Notify alerts:" Width="75" VerticalAlignment="Center" Foreground="#666" FontSize="11" />
-                    <CheckBox x:Name="ClaudeNotify80Check" Content="80%" Margin="0,0,12,0" FontSize="11" />
-                    <CheckBox x:Name="ClaudeNotify95Check" Content="95%" Margin="0,0,12,0" FontSize="11" />
-                    <CheckBox x:Name="ClaudeNotify100Check" Content="100%" FontSize="11" />
-                </StackPanel>
-            </StackPanel>
-        </Border>
-
-        <Border BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,4" Opacity="0.6">
-            <StackPanel>
-                <CheckBox x:Name="ChatGptEnabledCheck" Content="ChatGPT - not implemented yet" IsEnabled="False" />
-            </StackPanel>
-        </Border>
-
-        <Border BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,14">
-            <StackPanel>
-                <DockPanel Margin="0,0,0,4">
-                    <CheckBox x:Name="AntigravityEnabledCheck" Content="Antigravity - enabled" DockPanel.Dock="Left" VerticalAlignment="Center" />
-                    <Button x:Name="AntigravityDetectButton" Content="Detect Antigravity..." DockPanel.Dock="Right"
-                            Click="AntigravityDetectButton_Click" Padding="6,2" HorizontalAlignment="Right" />
-                </DockPanel>
-                <CheckBox x:Name="AntigravityManualModeCheck" Content="Manual mode (skip scraping, use value below)" Margin="0,2" />
-                <DockPanel Margin="0,2,0,0">
-                    <TextBlock Text="Manual %:" VerticalAlignment="Center" Width="70" />
-                    <TextBox x:Name="AntigravityManualPercentBox" Width="60" />
-                    <Slider x:Name="AntigravityManualPercentSlider" Minimum="0" Maximum="100"
-                            Margin="8,0,0,0" ValueChanged="AntigravityManualPercentSlider_ValueChanged" />
-                </DockPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                    <TextBlock Text="Notify alerts:" Width="75" VerticalAlignment="Center" Foreground="#666" FontSize="11" />
-                    <CheckBox x:Name="AntigravityNotify80Check" Content="80%" Margin="0,0,12,0" FontSize="11" />
-                    <CheckBox x:Name="AntigravityNotify95Check" Content="95%" Margin="0,0,12,0" FontSize="11" />
-                    <CheckBox x:Name="AntigravityNotify100Check" Content="100%" FontSize="11" />
-                </StackPanel>
-                <TextBlock Text="Antigravity is a desktop app, not a web page - Orbit reads it via Chrome DevTools Protocol, which needs Antigravity running with --remote-debugging-port=9222 AND its Settings &gt; Models screen open (that's where the quota number lives; Orbit can't open it for you). Click Detect to check the connection. See selectors.json's Antigravity notes for the confirmed selector." Margin="0,4,0,0" TextWrapping="Wrap" Foreground="#888" FontSize="10" />
-            </StackPanel>
-        </Border>
-
-        <TextBlock Text="Refresh interval (minutes)" FontWeight="SemiBold" Margin="0,0,0,4" />
-        <DockPanel Margin="0,0,0,14">
-            <TextBox x:Name="IntervalBox" Width="50" DockPanel.Dock="Left" />
-            <TextBlock Text="minutes (5-120)" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="#888" />
-        </DockPanel>
-
-        <TextBlock Text="Display Monitor" FontWeight="SemiBold" Margin="0,0,0,4" />
-        <ComboBox x:Name="MonitorComboBox" DisplayMemberPath="DisplayName" SelectedValuePath="DeviceName"
-                  SelectionChanged="MonitorComboBox_SelectionChanged" Margin="0,0,0,14" />
-
-        <TextBlock Text="Layout" FontWeight="SemiBold" Margin="0,0,0,4" />
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-            <RadioButton x:Name="LayoutTopCenterRadio" Content="Top center (horizontal)" GroupName="Layout" Margin="0,0,18,0" Checked="LayoutRadio_Checked" />
-            <RadioButton x:Name="LayoutRightCenterRadio" Content="Right center (vertical)" GroupName="Layout" Checked="LayoutRadio_Checked" />
-        </StackPanel>
-
-        <TextBlock Text="Position offset (pixels)" FontWeight="SemiBold" Margin="0,0,0,4" />
-        <DockPanel Margin="0,0,0,4">
-            <TextBlock Text="Horizontal (X):" VerticalAlignment="Center" Width="90" />
-            <TextBox x:Name="OffsetXBox" Width="50" DockPanel.Dock="Left" TextAlignment="Right" TextChanged="OffsetXBox_TextChanged" />
-            <Slider x:Name="OffsetXSlider" Minimum="-100" Maximum="100"
-                    Margin="8,0,0,0" ValueChanged="OffsetXSlider_ValueChanged" />
-        </DockPanel>
-        <DockPanel Margin="0,0,0,4">
-            <TextBlock Text="Vertical (Y):" VerticalAlignment="Center" Width="90" />
-            <TextBox x:Name="OffsetYBox" Width="50" DockPanel.Dock="Left" TextAlignment="Right" TextChanged="OffsetYBox_TextChanged" />
-            <Slider x:Name="OffsetYSlider" Minimum="-100" Maximum="100"
-                    Margin="8,0,0,0" ValueChanged="OffsetYSlider_ValueChanged" />
-        </DockPanel>
-        <TextBlock Text="Positive X moves right, positive Y moves down. Use this to nudge the notch flush against the screen edge." Margin="0,0,0,14" TextWrapping="Wrap" Foreground="#888" FontSize="11" />
-
-        <TextBlock Text="Animation speed" FontWeight="SemiBold" Margin="0,0,0,4" />
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-            <RadioButton x:Name="AnimSpeedFastRadio" Content="Fast" GroupName="AnimSpeed" Margin="0,0,18,0" Checked="AnimSpeedRadio_Checked" />
-            <RadioButton x:Name="AnimSpeedNormalRadio" Content="Normal" GroupName="AnimSpeed" Margin="0,0,18,0" Checked="AnimSpeedRadio_Checked" />
-            <RadioButton x:Name="AnimSpeedFluidRadio" Content="Fluid" GroupName="AnimSpeed" Checked="AnimSpeedRadio_Checked" />
-        </StackPanel>
-        <TextBlock Text="Local REST API (Stream Deck, Rainmeter, CLI)" FontWeight="SemiBold" Margin="0,0,0,4" />
-        <Border BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,14">
-            <StackPanel>
-                <DockPanel Margin="0,0,0,6">
-                    <CheckBox x:Name="LocalApiEnabledCheck" Content="Enable Local REST API server" DockPanel.Dock="Left" VerticalAlignment="Center" />
-                    <Button x:Name="OpenApiInBrowserButton" Content="Open Web Dashboard..." DockPanel.Dock="Right"
-                            Click="OpenApiInBrowserButton_Click" Padding="6,2" HorizontalAlignment="Right" />
-                </DockPanel>
-                <DockPanel Margin="0,2,0,4">
-                    <TextBlock Text="Port:" VerticalAlignment="Center" Width="40" />
-                    <TextBox x:Name="LocalApiPortBox" Width="60" Text="18923" />
-                    <TextBlock Text="http://127.0.0.1:18923/api/usage" Foreground="#0066CC" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="11" />
-                </DockPanel>
-                <TextBlock Text="Exposes live quota endpoints for Elgato Stream Deck, Rainmeter skins, and terminal commands (orbit status)." Foreground="#888" FontSize="10" TextWrapping="Wrap" />
-            </StackPanel>
-        </Border>
-
-        <CheckBox x:Name="StartWithWindowsCheck" Content="Start with Windows" Margin="0,0,0,14" />
-
-        <Button x:Name="ReloadSelectorsButton" Content="Reload selectors.json"
-                Click="ReloadSelectorsButton_Click" HorizontalAlignment="Left" Padding="6,3" Margin="0,0,0,14" />
-
-        <TextBlock x:Name="StatusText" Foreground="#888" Margin="0,0,0,10" TextWrapping="Wrap" />
-
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="CancelButton_Click" />
-            <Button Content="Save" Width="80" Click="SaveButton_Click" IsDefault="True" />
-        </StackPanel>
-    </StackPanel>
-    </ScrollViewer>
+            </Border>
+        </Grid>
+    </Border>
 </Window>

@@ -3,10 +3,48 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Orbit">
     <Application.Resources>
+        <!-- Default Dark Theme Brushes -->
+        <SolidColorBrush x:Key="NotchBackgroundBrush" Color="#FA060608" />
+        <SolidColorBrush x:Key="NotchBorderBrush" Color="#24FFFFFF" />
+        <SolidColorBrush x:Key="NotchTextPrimaryBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="NotchTextSecondaryBrush" Color="#9E9EA3" />
+        <SolidColorBrush x:Key="NotchTextMutedBrush" Color="#6E6E73" />
+        <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#1FFFFFFF" />
+        <SolidColorBrush x:Key="ToolTipBackgroundBrush" Color="#F80A0A0C" />
+        <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#28FFFFFF" />
+        <SolidColorBrush x:Key="ToolTipTextPrimaryBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="ToolTipTextSecondaryBrush" Color="#A1A1AA" />
+        <SolidColorBrush x:Key="ToolTipTextMutedBrush" Color="#71717A" />
+
+        <SolidColorBrush x:Key="DockSilhouetteBrush" Color="#060608" />
+        <SolidColorBrush x:Key="GaugeDiscBrush" Color="#141417" />
+        <SolidColorBrush x:Key="GaugeTrackBrush" Color="#222226" />
+        <SolidColorBrush x:Key="GaugeIconBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="GaugeTextBrush" Color="#FFFFFF" />
+
+        <SolidColorBrush x:Key="FlyoutCardBackgroundBrush" Color="#0D0D11" />
+        <SolidColorBrush x:Key="FlyoutCardBorderBrush" Color="#222228" />
+        <SolidColorBrush x:Key="FlyoutTextPrimaryBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="FlyoutTextSecondaryBrush" Color="#E0E0E6" />
+        <SolidColorBrush x:Key="FlyoutTextMutedBrush" Color="#8E8E93" />
+        <SolidColorBrush x:Key="FlyoutTextSubBrush" Color="#D1D1D6" />
+        <SolidColorBrush x:Key="FlyoutProgressBarTrackBrush" Color="#222226" />
+
+        <SolidColorBrush x:Key="SettingsBackgroundBrush" Color="#13141B" />
+        <SolidColorBrush x:Key="SettingsCardBrush" Color="#181A24" />
+        <SolidColorBrush x:Key="SettingsInnerCardBrush" Color="#12131A" />
+        <SolidColorBrush x:Key="SettingsBorderBrush" Color="#252836" />
+        <SolidColorBrush x:Key="SettingsTextPrimaryBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="SettingsTextSecondaryBrush" Color="#94A3B8" />
+        <SolidColorBrush x:Key="SettingsTextMutedBrush" Color="#64748B" />
+        <SolidColorBrush x:Key="SettingsTabHoverBrush" Color="#1F2230" />
+        <SolidColorBrush x:Key="SettingsTabActiveBrush" Color="#252836" />
+        <SolidColorBrush x:Key="SettingsScrollThumbBrush" Color="#383C50" />
+
         <Style TargetType="ToolTip">
-            <Setter Property="Background" Value="#F4141416" />
-            <Setter Property="Foreground" Value="#EDEDED" />
-            <Setter Property="BorderBrush" Value="#2EFFFFFF" />
+            <Setter Property="Background" Value="{DynamicResource ToolTipBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ToolTipTextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="10,8" />
             <Setter Property="FontFamily" Value="Segoe UI" />
@@ -15,8 +53,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToolTip">
-                        <Border Background="#F4141416"
-                                BorderBrush="#26FFFFFF"
+                        <Border Background="{DynamicResource ToolTipBackgroundBrush}"
+                                BorderBrush="{DynamicResource ToolTipBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Padding="{TemplateBinding Padding}"

@@ -6,7 +6,8 @@
         xmlns:controls="clr-namespace:Orbit.Controls"
         mc:Ignorable="d"
         Title="Orbit"
-        Width="360" Height="190"
+        Icon="pack://application:,,,/Resources/orbit.ico"
+        Width="380" Height="520"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -16,174 +17,229 @@
         WindowStartupLocation="Manual">
 
     <Window.Resources>
-        <Storyboard x:Key="RefreshPulseStoryboard" RepeatBehavior="Forever">
-            <DoubleAnimation Storyboard.TargetName="RefreshIconRotateH" Storyboard.TargetProperty="Angle"
-                              From="0" To="360" Duration="0:0:0.7" />
-            <DoubleAnimation Storyboard.TargetName="RefreshIconRotateV" Storyboard.TargetProperty="Angle"
-                              From="0" To="360" Duration="0:0:0.7" />
-        </Storyboard>
+        <ContextMenu x:Key="DockContextMenu">
+            <MenuItem Header="Settings..." Click="SettingsButton_Click" />
+            <MenuItem Header="Refresh Now" Click="RefreshButton_Click" />
+            <Separator />
+            <MenuItem Header="Exit Orbit" Click="ExitButton_Click" />
+        </ContextMenu>
+
+        <!-- Clean, reliable rounded progress bar template -->
+        <ControlTemplate x:Key="SleekProgressBarTemplate" TargetType="ProgressBar">
+            <Border Background="{TemplateBinding Background}" CornerRadius="3" ClipToBounds="True">
+                <Grid x:Name="PART_Track">
+                    <Border x:Name="PART_Indicator"
+                            Background="{TemplateBinding Foreground}"
+                            CornerRadius="3"
+                            HorizontalAlignment="Left"
+                            MinWidth="3" />
+                </Grid>
+            </Border>
+        </ControlTemplate>
     </Window.Resources>
 
-    <!-- HoverZone fills the whole (fixed-size, never-animated) window and owns mouse enter/leave.
-         NotchBorder animates its Width/Height inside it for the visual grow/shrink, but hit-testing
-         happens against this stable, unanimated bound so the hover state can't flicker mid-animation
-         (WPF re-hit-tests every frame; an animated hit-test target briefly loses/regains the pointer
-         and fires spurious Enter/Leave pairs, which is what made expand/collapse feel jerky). The
-         trade-off: the whole notch footprint (not just the collapsed pill) is no longer click-through,
-         which is expected for this kind of anticipatory hover UI. -->
-    <Grid x:Name="HoverZone" Background="Transparent"
-          MouseEnter="NotchBorder_MouseEnter"
-          MouseLeave="NotchBorder_MouseLeave"
-          MouseLeftButtonUp="NotchBorder_MouseLeftButtonUp">
-        <Border x:Name="NotchBorder"
-                Width="140" Height="28"
-                HorizontalAlignment="Center" VerticalAlignment="Top"
-                CornerRadius="0,0,16,16"
-                Background="#E6141414"
-                ClipToBounds="True">
-            <Grid>
-                <!-- Collapsed: status dot only, oriented to match the docked edge -->
-                <Grid x:Name="CollapsedContent" Opacity="1">
-                    <StackPanel x:Name="CollapsedHorizontalPanel" Orientation="Horizontal"
-                                HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Ellipse x:Name="AggregateStatusDotH" Width="9" Height="9" Fill="#3DDC84" Margin="0,0,6,0" />
-                        <TextBlock Text="Orbit" Foreground="#DDDDDD" FontSize="11" FontFamily="Segoe UI" VerticalAlignment="Center" />
-                    </StackPanel>
-                    <StackPanel x:Name="CollapsedVerticalPanel" Orientation="Vertical" Visibility="Collapsed"
-                                HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Ellipse x:Name="AggregateStatusDotV" Width="9" Height="9" Fill="#3DDC84" />
-                    </StackPanel>
-                </Grid>
+    <!-- Whole window root grid -->
+    <Grid x:Name="WindowRoot" Background="Transparent">
 
-                <!-- Expanded: header + radial gauges, laid out horizontally or vertically per layout -->
-                <Grid x:Name="ExpandedContent" Opacity="0" Visibility="Collapsed">
-                    <Grid x:Name="ExpandedHorizontalPanel" Margin="18,14,18,14">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
+        <!-- ========================================================= -->
+        <!-- RIGHT-CENTER DOCK LAYOUT (Matches Reference Screenshot)   -->
+        <!-- ========================================================= -->
+        <Grid x:Name="RightDockPanel" Visibility="Visible">
 
-                        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,10">
-                            <TextBlock Text="Orbit" Foreground="White" FontSize="13" FontWeight="SemiBold"
-                                       FontFamily="Segoe UI" DockPanel.Dock="Left" VerticalAlignment="Center" />
-                            <Button x:Name="RefreshButtonH" DockPanel.Dock="Right"
-                                    Width="20" Height="20" Padding="0"
-                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                    Click="RefreshButton_Click"
-                                    ToolTip="Refresh now">
-                                <Path Data="M12,4 A8,8 0 1 0 19.3,9 M19,3 L19.3,9 L13.3,8.7"
-                                      Stroke="#CCCCCC" StrokeThickness="1.6"
-                                      Width="14" Height="14" Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
-                                    <Path.RenderTransform>
-                                        <RotateTransform x:Name="RefreshIconRotateH" Angle="0" />
-                                    </Path.RenderTransform>
-                                </Path>
-                            </Button>
+            <!-- Floating Callout Flyout Card (Appears to the left of the dock) -->
+            <Grid x:Name="FlyoutCard"
+                  Width="276"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Top"
+                  Margin="0,0,74,0"
+                  Opacity="0"
+                  MouseEnter="FlyoutCard_MouseEnter"
+                  MouseLeave="FlyoutCard_MouseLeave">
+                <Grid.RenderTransform>
+                    <TransformGroup>
+                        <TranslateTransform x:Name="FlyoutTranslateY" Y="100" />
+                        <TranslateTransform x:Name="FlyoutTranslateX" X="0" />
+                    </TransformGroup>
+                </Grid.RenderTransform>
+
+                <!-- Card Body Border with Soft Drop Shadow -->
+                <Border Background="{DynamicResource FlyoutCardBackgroundBrush}"
+                        BorderBrush="{DynamicResource FlyoutCardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="16"
+                        Padding="18,16">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="32" ShadowDepth="4" Direction="180" Opacity="0.8" Color="#000000" />
+                    </Border.Effect>
+                    <StackPanel>
+                        <!-- Header: Service Icon + Name Usage + Relative Time -->
+                        <DockPanel Margin="0,0,0,14" LastChildFill="False">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                <Grid Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Rectangle Width="16" Height="16" Fill="{DynamicResource FlyoutTextPrimaryBrush}"
+                                               Visibility="{Binding HoveredService.ImageLogoVisibility}">
+                                        <Rectangle.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding HoveredService.ServiceIconImageSource}" Stretch="Uniform" />
+                                        </Rectangle.OpacityMask>
+                                    </Rectangle>
+                                    <Path Width="15" Height="15" Stretch="Uniform" Fill="{DynamicResource FlyoutTextPrimaryBrush}"
+                                          Data="{Binding HoveredService.ServiceIconGeometry}"
+                                          Visibility="{Binding HoveredService.VectorLogoVisibility}" />
+                                </Grid>
+                                <TextBlock Text="{Binding HoveredService.DisplayName, StringFormat='{}{0} Usage'}"
+                                           FontSize="14.5" FontWeight="SemiBold" Foreground="{DynamicResource FlyoutTextPrimaryBrush}"
+                                           FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding HoveredService.RelativeTimeDisplay}"
+                                       FontSize="11.5" Foreground="{DynamicResource FlyoutTextMutedBrush}"
+                                       FontFamily="Segoe UI Variable, Segoe UI" VerticalAlignment="Center" />
                         </DockPanel>
 
-                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Services}" VerticalAlignment="Center">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Rows="1" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <controls:RadialGauge Diameter="64" RingThickness="6" Margin="6,0"
-                                                           HorizontalAlignment="Center"
-                                                           Percent="{Binding PercentUsed}"
-                                                           Accent="{Binding AccentBrush}"
-                                                           IsActive="{Binding IsActive}"
-                                                           StatusText="{Binding GaugeText}"
-                                                           DisplayLabel="{Binding DisplayName}"
-                                                           SubText="{Binding ResetDisplay}">
-                                        <controls:RadialGauge.ToolTip>
-                                            <ToolTip>
-                                                <StackPanel MinWidth="130">
-                                                    <DockPanel LastChildFill="False" Margin="0,0,0,5">
-                                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                                                            <Ellipse Width="7" Height="7" Fill="{Binding AccentBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="White" FontSize="11.5" />
-                                                        </StackPanel>
-                                                        <TextBlock Text="{Binding DisplayText}" DockPanel.Dock="Right" FontWeight="Bold" Foreground="{Binding AccentBrush}" FontSize="11.5" />
-                                                    </DockPanel>
-                                                    <Border Height="1" Background="#26FFFFFF" Margin="0,0,0,5" />
-                                                    <TextBlock Text="{Binding ResetDisplay}" Foreground="#B0B0B8" FontSize="11" Margin="0,0,0,3"
-                                                               Visibility="{Binding ResetVisibility}" />
-                                                    <TextBlock Text="{Binding LastUpdatedDisplay}" Foreground="#808088" FontSize="10.5" />
-                                                </StackPanel>
-                                            </ToolTip>
-                                        </controls:RadialGauge.ToolTip>
-                                    </controls:RadialGauge>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Grid>
-
-                    <Grid x:Name="ExpandedVerticalPanel" Margin="14,16,14,16" Visibility="Collapsed">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-
-                        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,12">
-                            <TextBlock Text="Orbit" Foreground="White" FontSize="13" FontWeight="SemiBold"
-                                       FontFamily="Segoe UI" DockPanel.Dock="Left" VerticalAlignment="Center" />
-                            <Button x:Name="RefreshButtonV" DockPanel.Dock="Right"
-                                    Width="20" Height="20" Padding="0"
-                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                    Click="RefreshButton_Click"
-                                    ToolTip="Refresh now">
-                                <Path Data="M12,4 A8,8 0 1 0 19.3,9 M19,3 L19.3,9 L13.3,8.7"
-                                      Stroke="#CCCCCC" StrokeThickness="1.6"
-                                      Width="14" Height="14" Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
-                                    <Path.RenderTransform>
-                                        <RotateTransform x:Name="RefreshIconRotateV" Angle="0" />
-                                    </Path.RenderTransform>
-                                </Path>
-                            </Button>
+                        <!-- Top Limit (Current session / 5 hour limit) -->
+                        <DockPanel LastChildFill="False" Margin="0,0,0,7">
+                            <TextBlock DockPanel.Dock="Left" Text="{Binding HoveredService.TopLimitTitle}"
+                                       FontSize="12.5" FontWeight="Medium" Foreground="{DynamicResource FlyoutTextSecondaryBrush}" FontFamily="Segoe UI Variable, Segoe UI" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding HoveredService.TopLimitResetDisplay}"
+                                       FontSize="11.5" Foreground="{DynamicResource FlyoutTextMutedBrush}" FontFamily="Segoe UI Variable, Segoe UI" />
                         </DockPanel>
+                        <ProgressBar Height="6" Minimum="0" Maximum="100"
+                                     Value="{Binding HoveredService.TopLimitPercent, Mode=OneWay}"
+                                     Foreground="{Binding HoveredService.TopLimitBrush}"
+                                     Background="{DynamicResource FlyoutProgressBarTrackBrush}"
+                                     BorderThickness="0"
+                                     Template="{StaticResource SleekProgressBarTemplate}"
+                                     Margin="0,0,0,5" />
+                        <TextBlock Text="{Binding HoveredService.TopLimitUsedDisplay}"
+                                   FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource FlyoutTextSubBrush}" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Margin="0,0,0,16" />
 
-                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Services}" HorizontalAlignment="Center">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Vertical" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <controls:RadialGauge Diameter="72" RingThickness="7" Margin="0,8"
-                                                           HorizontalAlignment="Center"
-                                                           Percent="{Binding PercentUsed}"
-                                                           Accent="{Binding AccentBrush}"
-                                                           IsActive="{Binding IsActive}"
-                                                           StatusText="{Binding GaugeText}"
-                                                           DisplayLabel="{Binding DisplayName}"
-                                                           SubText="{Binding ResetDisplay}">
-                                        <controls:RadialGauge.ToolTip>
-                                            <ToolTip>
-                                                <StackPanel MinWidth="130">
-                                                    <DockPanel LastChildFill="False" Margin="0,0,0,5">
-                                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                                                            <Ellipse Width="7" Height="7" Fill="{Binding AccentBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="White" FontSize="11.5" />
-                                                        </StackPanel>
-                                                        <TextBlock Text="{Binding DisplayText}" DockPanel.Dock="Right" FontWeight="Bold" Foreground="{Binding AccentBrush}" FontSize="11.5" />
-                                                    </DockPanel>
-                                                    <Border Height="1" Background="#26FFFFFF" Margin="0,0,0,5" />
-                                                    <TextBlock Text="{Binding ResetDisplay}" Foreground="#B0B0B8" FontSize="11" Margin="0,0,0,3"
-                                                               Visibility="{Binding ResetVisibility}" />
-                                                    <TextBlock Text="{Binding LastUpdatedDisplay}" Foreground="#808088" FontSize="10.5" />
-                                                </StackPanel>
-                                            </ToolTip>
-                                        </controls:RadialGauge.ToolTip>
-                                    </controls:RadialGauge>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Grid>
-                </Grid>
+                        <!-- Bottom Limit (Weekly limit / All models) -->
+                        <DockPanel LastChildFill="False" Margin="0,0,0,7">
+                            <TextBlock DockPanel.Dock="Left" Text="{Binding HoveredService.BottomLimitTitle}"
+                                       FontSize="12.5" FontWeight="Medium" Foreground="{DynamicResource FlyoutTextSecondaryBrush}" FontFamily="Segoe UI Variable, Segoe UI" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding HoveredService.BottomLimitResetDisplay}"
+                                       FontSize="11.5" Foreground="{DynamicResource FlyoutTextMutedBrush}" FontFamily="Segoe UI Variable, Segoe UI" />
+                        </DockPanel>
+                        <ProgressBar Height="6" Minimum="0" Maximum="100"
+                                     Value="{Binding HoveredService.BottomLimitPercent, Mode=OneWay}"
+                                     Foreground="{Binding HoveredService.BottomLimitBrush}"
+                                     Background="{DynamicResource FlyoutProgressBarTrackBrush}"
+                                     BorderThickness="0"
+                                     Template="{StaticResource SleekProgressBarTemplate}"
+                                     Margin="0,0,0,5" />
+                        <TextBlock Text="{Binding HoveredService.BottomLimitUsedDisplay}"
+                                   FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource FlyoutTextSubBrush}" FontFamily="Segoe UI Variable, Segoe UI"
+                                   Margin="0,0,0,2" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Speech Bubble Triangular Callout Notch (points right to active item) -->
+                <Path Data="M 0,0 L 10,9 L 0,18"
+                      Fill="{DynamicResource FlyoutCardBackgroundBrush}"
+                      Stroke="{DynamicResource FlyoutCardBorderBrush}"
+                      StrokeThickness="1"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      Margin="0,0,-9,0" />
             </Grid>
+
+            <!-- Organic Curved Dock on the right screen edge -->
+            <Grid x:Name="RightDockContainer"
+                  Width="68"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  MouseEnter="RightDockContainer_MouseEnter"
+                  MouseLeave="RightDockContainer_MouseLeave"
+                  ContextMenu="{StaticResource DockContextMenu}">
+                <Grid.RenderTransform>
+                    <TranslateTransform x:Name="RightDockTranslate" X="0" />
+                </Grid.RenderTransform>
+
+                <!-- Procedural Curved Silhouette with Fillets at Top and Bottom -->
+                <controls:NotchDockShape x:Name="RightDockSilhouette"
+                                         Width="68"
+                                         Height="{Binding ElementName=RightDockContent, Path=ActualHeight}"
+                                         FilletRadius="36"
+                                         Fill="{DynamicResource DockSilhouetteBrush}"
+                                         HorizontalAlignment="Right">
+                    <controls:NotchDockShape.Effect>
+                        <DropShadowEffect BlurRadius="28" ShadowDepth="4" Direction="180" Opacity="0.8" Color="#000000" />
+                    </controls:NotchDockShape.Effect>
+                </controls:NotchDockShape>
+
+                <!-- Items stacked inside the dock -->
+                <Border x:Name="RightDockContent" Padding="0,34,0,34" HorizontalAlignment="Right" Width="68">
+                    <ItemsControl x:Name="RightDockItems" ItemsSource="{Binding Services}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,7" Cursor="Hand" Background="Transparent"
+                                      MouseEnter="ServiceItem_MouseEnter"
+                                      MouseLeave="ServiceItem_MouseLeave"
+                                      MouseLeftButtonUp="ServiceItem_MouseLeftButtonUp">
+                                    <controls:RadialGauge Diameter="44"
+                                                          RingThickness="3.5"
+                                                          Percent="{Binding DockPercentUsed}"
+                                                          StatusText="{Binding DockPercentDisplay}"
+                                                          Accent="{Binding AccentBrush}"
+                                                          CenterImageSource="{Binding ServiceIconImageSource}"
+                                                          CenterIcon="{Binding ServiceIconGeometry}"
+                                                          ShowIconInCenter="True"
+                                                          IsActive="{Binding IsActive}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ========================================================= -->
+        <!-- TOP-CENTER PANEL (When user selects TopCenter in Settings)-->
+        <!-- ========================================================= -->
+        <Border x:Name="TopCenterDockBorder"
+                Height="64"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
+                CornerRadius="0,0,18,18"
+                Background="{DynamicResource NotchBackgroundBrush}"
+                BorderBrush="{DynamicResource NotchBorderBrush}"
+                BorderThickness="1"
+                Visibility="Collapsed"
+                Padding="16,6"
+                ContextMenu="{StaticResource DockContextMenu}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="28" Direction="270" ShadowDepth="6" Opacity="0.75" Color="#000000" />
+            </Border.Effect>
+            <ItemsControl ItemsSource="{Binding Services}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="12,0" Cursor="Hand" Background="Transparent"
+                              MouseEnter="ServiceItem_MouseEnter"
+                              MouseLeave="ServiceItem_MouseLeave"
+                              MouseLeftButtonUp="ServiceItem_MouseLeftButtonUp">
+                            <controls:RadialGauge Diameter="38"
+                                                  RingThickness="3"
+                                                  Percent="{Binding DockPercentUsed}"
+                                                  StatusText="{Binding DockPercentDisplay}"
+                                                  Accent="{Binding AccentBrush}"
+                                                  CenterImageSource="{Binding ServiceIconImageSource}"
+                                                  CenterIcon="{Binding ServiceIconGeometry}"
+                                                  ShowIconInCenter="True"
+                                                  IsActive="{Binding IsActive}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </Border>
+
     </Grid>
 </Window>

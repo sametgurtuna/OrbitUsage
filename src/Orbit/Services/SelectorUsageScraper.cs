@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Orbit.Models;
 using Microsoft.Web.WebView2.Core;
 
@@ -69,7 +69,7 @@ internal static class SelectorUsageScraper
         }
     }
 
-    private static async Task<bool> NavigateAsync(CoreWebView2 webView, string url, CancellationToken ct)
+    internal static async Task<bool> NavigateAsync(CoreWebView2 webView, string url, CancellationToken ct)
     {
         var tcs = new TaskCompletionSource<bool>();
         void Handler(object? s, CoreWebView2NavigationCompletedEventArgs e) => tcs.TrySetResult(e.IsSuccess);
