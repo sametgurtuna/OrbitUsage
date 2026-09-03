@@ -163,4 +163,99 @@ public class AgyCliUsageScraperTests
         Assert.False(result.Success);
         Assert.Contains("structure", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void ParseUsageJson_ExactUserTerminalScenario_ExtractsCorrectQuotas()
+    {
+        // Matches the exact JSON structure returned by agy -p "/usage" --output-format json
+        // for: Weekly 77% remaining (23% used), 5h 100% remaining (0% used)
+        string json = """
+        {
+          "command": {
+            "data": {
+              "groups": [
+                {
+                  "name": "Gemini Models",
+                  "buckets": [
+                    {
+                      "id": "gemini-weekly",
+                      "name": "Weekly Limit Remaining",
+                      "window": "weekly",
+                      "remaining_fraction": 0.77,
+                      "reset_time": "2026-09-09T09:35:22Z"
+                    },
+                    {
+                      "id": "gemini-5h",
+                      "name": "Five Hour Limit Remaining",
+                      "window": "5h",
+                      "remaining_fraction": 1.0,
+                      "reset_time": "2026-09-03T18:58:36Z"
+                    }
+                  ]
+                },
+                {
+                  "name": "Claude and GPT models",
+                  "buckets": [
+                    {
+                      "id": "3p-weekly",
+                      "name": "Weekly Limit Remaining",
+                      "window": "weekly",
+                      "remaining_fraction": 0.67,
+                      "reset_time": "2026-09-09T22:15:33Z"
+                    },
+                    {
+                      "id": "3p-5h",
+                      "name": "Five Hour Limit Remaining",
+                      "window": "5h",
+                      "remaining_fraction": 1.0,
+                      "reset_time": "2026-09-03T18:58:36Z"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+        """;
+
+        var fixedNow = new DateTime(2026, 9, 3, 17, 0, 0, DateTimeKind.Utc);
+        var result = AgyCliUsageScraper.ParseUsageJson(json, nowUtc: fixedNow);
+
+        Assert.True(result.Success);
+        // Weekly: (1.0 - 0.77) * 100 = 23.0% used
+        Assert.Equal(23.0, result.PercentUsed);
+        Assert.Equal("23%", result.RawText);
+        Assert.StartsWith("in 5d", result.ResetTimeText);
+
+        // 5-hour limit: 100% remaining -> 0.0% used
+        Assert.True(result.HasSessionData);
+        Assert.Equal(0.0, result.SessionPercentUsed);
+        Assert.StartsWith("in 1h 58m", result.SessionResetTimeText);
+    }
+
+    [Fact]
+    public void ParseUsageText_FormattedTableOutput_ExtractsCorrectQuotas()
+    {
+        string textOutput = """
+        Quota:
+        Gemini Models          Weekly Limit Remaining     77%   2026-09-09T09:35:22Z
+        Gemini Models          Five Hour Limit Remaining  100%  2026-09-03T18:58:36Z
+        Claude and GPT models  Weekly Limit Remaining     67%   2026-09-09T22:15:33Z
+        Claude and GPT models  Five Hour Limit Remaining  100%  2026-09-03T18:58:36Z
+        """;
+
+        var fixedNow = new DateTime(2026, 9, 3, 17, 0, 0, DateTimeKind.Utc);
+        var result = AgyCliUsageScraper.ParseUsageJson(textOutput, nowUtc: fixedNow);
+
+        Assert.True(result.Success);
+        // Weekly: 100 - 77 = 23% used
+        Assert.Equal(23.0, result.PercentUsed);
+        Assert.Equal("23%", result.RawText);
+        Assert.StartsWith("in 5d", result.ResetTimeText);
+
+        // 5-hour limit: 100 - 100 = 0% used
+        Assert.True(result.HasSessionData);
+        Assert.Equal(0.0, result.SessionPercentUsed);
+        Assert.StartsWith("in 1h 58m", result.SessionResetTimeText);
+    }
 }

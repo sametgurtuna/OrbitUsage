@@ -162,6 +162,13 @@ internal static class AgyCliUsageScraper
             return UsageResult.Fail("agy.exe returned empty output.");
         }
 
+        if (!stdout.TrimStart().StartsWith("{"))
+        {
+            var textResult = ParseUsageText(stdout, nowUtc);
+            if (textResult.Success)
+                return textResult;
+        }
+
         try
         {
             using var doc = JsonDocument.Parse(stdout);
@@ -226,9 +233,13 @@ internal static class AgyCliUsageScraper
                     weeklyBucket = bucket;
                 }
                 else if (window.Equals("5h", StringComparison.OrdinalIgnoreCase) ||
+                         window.Contains("5h", StringComparison.OrdinalIgnoreCase) ||
                          bucketId.Contains("5h", StringComparison.OrdinalIgnoreCase) ||
                          bucketId.Contains("five", StringComparison.OrdinalIgnoreCase) ||
-                         bucketName.Contains("Five Hour", StringComparison.OrdinalIgnoreCase))
+                         bucketName.Contains("Five Hour", StringComparison.OrdinalIgnoreCase) ||
+                         bucketName.Contains("5 Hour", StringComparison.OrdinalIgnoreCase) ||
+                         bucketName.Contains("5-Hour", StringComparison.OrdinalIgnoreCase) ||
+                         bucketName.Contains("session", StringComparison.OrdinalIgnoreCase))
                 {
                     fiveHourBucket = bucket;
                 }
@@ -266,9 +277,106 @@ internal static class AgyCliUsageScraper
         }
         catch (JsonException ex)
         {
+            var textResult = ParseUsageText(stdout, nowUtc);
+            if (textResult.Success)
+                return textResult;
+
             Log.Warning(ex, "[AgyCliUsageScraper] Failed to parse JSON output from agy");
             return UsageResult.Fail($"Failed to parse JSON: {ex.Message}");
         }
+    }
+
+    public static UsageResult ParseUsageText(string stdout, DateTime? nowUtc = null)
+    {
+        if (string.IsNullOrWhiteSpace(stdout))
+            return UsageResult.Fail("agy.exe returned empty output.");
+
+        DateTime currentUtc = nowUtc ?? DateTime.UtcNow;
+        var lines = stdout.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+        double? weeklyUsed = null;
+        string? weeklyReset = null;
+        double? fiveHourUsed = null;
+        string? fiveHourReset = null;
+
+        var percentRegex = new System.Text.RegularExpressions.Regex(@"(\d+(?:\.\d+)?)\s*%", System.Text.RegularExpressions.RegexOptions.Compiled);
+        var dateRegex = new System.Text.RegularExpressions.Regex(@"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        foreach (var line in lines)
+        {
+            bool isGemini = line.Contains("Gemini", StringComparison.OrdinalIgnoreCase);
+            bool isWeekly = line.Contains("Weekly", StringComparison.OrdinalIgnoreCase);
+            bool isFiveHour = line.Contains("Five Hour", StringComparison.OrdinalIgnoreCase) ||
+                              line.Contains("5 Hour", StringComparison.OrdinalIgnoreCase) ||
+                              line.Contains("5-Hour", StringComparison.OrdinalIgnoreCase) ||
+                              line.Contains("5h", StringComparison.OrdinalIgnoreCase);
+
+            if (!isWeekly && !isFiveHour)
+                continue;
+
+            var matchPercent = percentRegex.Match(line);
+            if (!matchPercent.Success || !double.TryParse(matchPercent.Groups[1].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double remainingPercent))
+                continue;
+
+            double used = Math.Clamp(100.0 - remainingPercent, 0, 100);
+
+            string? resetText = null;
+            var matchDate = dateRegex.Match(line);
+            if (matchDate.Success && DateTime.TryParse(matchDate.Value, out var resetUtc))
+            {
+                resetText = FormatResetSpan(resetUtc.ToUniversalTime() - currentUtc);
+            }
+
+            if (isGemini)
+            {
+                if (isWeekly)
+                {
+                    weeklyUsed = used;
+                    weeklyReset = resetText;
+                }
+                else if (isFiveHour)
+                {
+                    fiveHourUsed = used;
+                    fiveHourReset = resetText;
+                }
+            }
+            else if (!weeklyUsed.HasValue && isWeekly)
+            {
+                weeklyUsed = used;
+                weeklyReset = resetText;
+            }
+            else if (!fiveHourUsed.HasValue && isFiveHour)
+            {
+                fiveHourUsed = used;
+                fiveHourReset = resetText;
+            }
+        }
+
+        if (weeklyUsed.HasValue)
+        {
+            return UsageResult.Ok(
+                percentUsed: Math.Round(weeklyUsed.Value, 1),
+                rawText: $"{Math.Round(weeklyUsed.Value)}%",
+                resetTimeText: weeklyReset,
+                sessionPercentUsed: fiveHourUsed.HasValue ? Math.Round(fiveHourUsed.Value, 1) : null,
+                sessionResetTimeText: fiveHourReset);
+        }
+
+        return UsageResult.Fail("Could not parse quota buckets from agy text output.");
+    }
+
+    private static string? FormatResetSpan(TimeSpan span)
+    {
+        if (span.TotalMinutes <= 0) return null;
+        int days = (int)span.TotalDays;
+        int hours = span.Hours;
+        int minutes = span.Minutes;
+
+        if (days > 0)
+            return $"in {days}d {hours}h";
+        if (hours > 0)
+            return $"in {hours}h {minutes}m";
+        return $"in {minutes}m";
     }
 
     private static (double percentUsed, string? resetText)? ExtractBucket(JsonElement bucket, DateTime currentUtc)
@@ -283,20 +391,7 @@ internal static class AgyCliUsageScraper
         if (bucket.TryGetProperty("reset_time", out var resetTimeProp) &&
             DateTime.TryParse(resetTimeProp.GetString(), out var resetUtc))
         {
-            var span = resetUtc.ToUniversalTime() - currentUtc;
-            if (span.TotalMinutes > 0)
-            {
-                int days = (int)span.TotalDays;
-                int hours = span.Hours;
-                int minutes = span.Minutes;
-
-                if (days > 0)
-                    resetText = $"in {days}d {hours}h";
-                else if (hours > 0)
-                    resetText = $"in {hours}h {minutes}m";
-                else
-                    resetText = $"in {minutes}m";
-            }
+            resetText = FormatResetSpan(resetUtc.ToUniversalTime() - currentUtc);
         }
 
         return (usedPercent, resetText);

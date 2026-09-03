@@ -39,7 +39,7 @@ public class AppSettings
     public Dictionary<string, ServiceSettings> Services { get; set; } = new()
     {
         ["Claude"] = new ServiceSettings { Enabled = true, ManualMode = false },
-        ["Antigravity"] = new ServiceSettings { Enabled = true, ManualMode = true },
+        ["Antigravity"] = new ServiceSettings { Enabled = true, ManualMode = false },
         ["ChatGPT"] = new ServiceSettings { Enabled = false, ManualMode = false },
     };
 }

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sametgurtuna/OrbitUsage/releases"><img src="https://img.shields.io/badge/Release-v0.1.1-blue.svg?style=flat-square" alt="Release v0.1.1" /></a>
+  <a href="https://github.com/sametgurtuna/OrbitUsage/releases"><img src="https://img.shields.io/badge/Release-v0.1.2-blue.svg?style=flat-square" alt="Release v0.1.2" /></a>
   <a href="https://dotnet.microsoft.com/download/dotnet/8.0"><img src="https://img.shields.io/badge/.NET-8.0--windows-512BD4.svg?style=flat-square" alt=".NET 8" /></a>
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D4.svg?style=flat-square" alt="Windows 10 and 11" />
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="MIT License" />
@@ -60,7 +60,7 @@ Invoking `orbit` with command-line arguments turns the binary into a high-speed 
 Download the latest self-contained setup installer from the [Releases](https://github.com/sametgurtuna/OrbitUsage/releases) page:
 
 ```text
-OrbitSetup-v0.1.1.exe
+OrbitSetup-v0.1.2.exe
 ```
 
 The installer:
@@ -184,7 +184,7 @@ orbit --help
  / _ \|  _ \| __ )|_ _|_   _|
 | | | | |_) |  _ \ | |  | |  
 | |_| |  _ <| |_) || |  | |  
- \___/|_| \_\____/|___| |_|  v0.1.1
+ \___/|_| \_\____/|___| |_|  v0.1.2
 
 Claude 3.7 / Opus    [========------------]  42%  Resets in 2h 15m
 Google Antigravity   [==------------------]  08%  Resets in 4h 48m

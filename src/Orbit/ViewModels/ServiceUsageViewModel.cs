@@ -197,9 +197,7 @@ public class ServiceUsageViewModel : ViewModelBase
 
     public double TopLimitPercent
     {
-        get => (HasSessionGauge && SessionPercentUsed > 0)
-            ? SessionPercentUsed
-            : (PercentUsed > 0 ? PercentUsed : 0);
+        get => HasSessionGauge ? SessionPercentUsed : PercentUsed;
         set { }
     }
 
@@ -210,12 +208,12 @@ public class ServiceUsageViewModel : ViewModelBase
     {
         get
         {
-            var text = !string.IsNullOrWhiteSpace(SessionResetTimeText)
+            var text = HasSessionGauge
                 ? SessionResetTimeText
                 : ResetTimeText;
 
             if (string.IsNullOrWhiteSpace(text))
-                return ServiceKey == "Claude" ? "Resets in 5h" : string.Empty;
+                return ServiceKey is "Claude" or "Antigravity" ? "Resets in 5h" : string.Empty;
 
             text = text.Replace("⏳", "").Trim();
             if (text.StartsWith("in ", StringComparison.OrdinalIgnoreCase))
@@ -267,9 +265,7 @@ public class ServiceUsageViewModel : ViewModelBase
 
     public Brush BottomLimitBrush => new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E));
 
-    public double DockPercentUsed => (HasSessionGauge && SessionPercentUsed > 0)
-        ? SessionPercentUsed
-        : PercentUsed;
+    public double DockPercentUsed => HasSessionGauge ? SessionPercentUsed : PercentUsed;
 
     public string DockPercentDisplay => $"{DockPercentUsed:0}%";
 

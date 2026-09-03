@@ -161,4 +161,35 @@ public class ServiceUsageViewModelTests
         Assert.Equal(52.0, agy.TopLimitPercent);
         Assert.Equal(21.0, agy.BottomLimitPercent);
     }
+
+    [Fact]
+    public void FlyoutProperties_Antigravity_SeparatesWeeklyAndFiveHourWhenFiveHourIsZero()
+    {
+        var vm = new ServiceUsageViewModel("Antigravity", "Antigravity", "#38BDF8")
+        {
+            HasSessionGauge = true,
+            SessionPercentUsed = 0.0, // 100% 5h remaining -> 0% used
+            SessionResetTimeText = "in 1h 57m",
+            PercentUsed = 23.0, // 77% weekly remaining -> 23% used
+            ResetTimeText = "in 5d 19h"
+        };
+
+        // Top limit (5 hour limit) must be 0% and NOT leak the 23% weekly value
+        Assert.Equal("5 hour limit", vm.TopLimitTitle);
+        Assert.Equal(0.0, vm.TopLimitPercent);
+        Assert.Equal("0%", vm.TopLimitPercentDisplay);
+        Assert.Equal("0% Used", vm.TopLimitUsedDisplay);
+        Assert.Equal("Resets in 1h 57m", vm.TopLimitResetDisplay);
+
+        // Bottom limit (weekly limit) must be 23%
+        Assert.Equal("Weekly limit", vm.BottomLimitTitle);
+        Assert.Equal(23.0, vm.BottomLimitPercent);
+        Assert.Equal("23%", vm.BottomLimitPercentDisplay);
+        Assert.Equal("23% Used", vm.BottomLimitUsedDisplay);
+        Assert.Equal("Resets in 5d 19h", vm.BottomLimitResetDisplay);
+
+        // Dock gauge must show 0% (5h limit)
+        Assert.Equal(0.0, vm.DockPercentUsed);
+        Assert.Equal("0%", vm.DockPercentDisplay);
+    }
 }

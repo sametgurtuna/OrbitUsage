@@ -1,6 +1,6 @@
-# Build script for Orbit v0.1.1 Setup Installer
+# Build script for Orbit v0.1.2 Setup Installer
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Building Orbit v0.1.1 Release & Setup " -ForegroundColor Cyan
+Write-Host "  Building Orbit v0.1.2 Release & Setup " -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 # 1. Publish self-contained single-file executable
@@ -32,7 +32,7 @@ if (-not $iscc) {
 if ($iscc) {
     & $iscc installer\Orbit.iss
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "`n[SUCCESS] Setup installer generated at: installer\output\OrbitSetup-v0.1.1.exe" -ForegroundColor Green
+        Write-Host "`n[SUCCESS] Setup installer generated at: installer\output\OrbitSetup-v0.1.2.exe" -ForegroundColor Green
     } else {
         Write-Host "`n[ERROR] Inno Setup compilation failed." -ForegroundColor Red
     }
